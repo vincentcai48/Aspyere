@@ -30,6 +30,64 @@ exports.helloWorld = functions.https.onRequest(async (request, response) => {
 //     })
 // })
 
+//data: {name: , description: , displayName: ,}
+exports.createDB = functions.https.onCall(async (data, context) => {
+  try {
+    //first create the database with given settings
+    var res = await db.collection("databases").add({
+      members: [],
+      admins: [context.auth.uid],
+      isViewable: false,
+      name: data.name,
+      description: data.description,
+      creator: data.displayName,
+    });
+    //then create a private settings doc in dbPrivateSettings, and set a random memberCode
+    await db.collection("dbPrivateSettings").doc(res.id).set({
+      memberCode: generateRandomCode(),
+    });
+    return res.id;
+  } catch (e) {
+    return null;
+  }
+});
+//returns the new DB id if success, return null if error.
+
+function generateRandomCode() {
+  return (new Date().getTime() * Math.random())
+    .toString(36)
+    .replaceAll(".", "");
+}
+
+//data: {dbId: , memberCodeTry: }
+exports.tryDBMemberCode = functions.https.onCall(async (data, context) => {
+  try {
+    var privateSettings = await db
+      .collection("dbPrivateSettings")
+      .doc(data.dbId);
+    if (privateSettings.data().memberCode == data.memberCodeTry) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+});
+
+//data: {dbId: , memberCode: }
+exports.updateMemberCode = functions.https.onCall(async (data, context) => {
+  try {
+    await db.collection("dbPrivateSettings").doc(data.dbId).update({
+      memberCode: data.memberCode,
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+});
+//returns true if success, false if error.
+
 //data: Object {platformId: , groupId: , accessCodeTry}
 exports.joinGroup = functions.https.onCall(async (data, context) => {
   var groupData = await db
@@ -290,7 +348,8 @@ async function generateQuestionFromDB(
       .collection("questions")
       .doc(question.questionId)
       .get();
-    if (qr.exists) return qr.data(); //COME BACK, make sure you remove the answers from here, or somewhere in the code.
+    if (qr.exists)
+      return { ...qr.data(), stage: "questionId", points: question.points }; //COME BACK, make sure you remove the answers from here, or somewhere in the code.
   }
 
   //Step 6: Get the possible question options

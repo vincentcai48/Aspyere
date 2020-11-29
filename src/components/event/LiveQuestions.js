@@ -92,30 +92,42 @@ class LiveQuestions extends React.Component {
                 </div>
               ) : (
                 <div>
-                  <h2>Live Questions</h2>
                   <ul id="liveQuestions-ul">
                     {this.state.allQuestions.map((q) => {
                       num++;
                       return (
-                        <li>
-                          <div className="q-number">#{num}</div>
-                          <div className="q-text">
-                            {ReactHtmlParser(
-                              q.text.replaceAll("[&&linebreak]", "<br></br>")
-                            )}
+                        <li className="single-liveQuestion">
+                          <div className="col-1">
+                            <div className="q-number">#{num}</div>
                           </div>
-                          <ul className="q-images">
-                            {q.imageURLs.map((url) => {
-                              return (
-                                <li>
-                                  <img
-                                    className="single-qImage"
-                                    src={url}
-                                  ></img>
-                                </li>
-                              );
-                            })}
-                          </ul>
+                          <div className="col-2">
+                            <div className="q-text">
+                              {ReactHtmlParser(
+                                q.text.replaceAll("[&&linebreak]", "<br></br>")
+                              )}
+                            </div>
+                            <ul className="q-images">
+                              {q.imageURLs.map((url) => {
+                                return (
+                                  <li>
+                                    <img
+                                      className="single-qImage"
+                                      src={url}
+                                    ></img>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                          <div className="col-3">
+                            <input
+                              className="answer-input"
+                              placeholder={`Answer for #${num}`}
+                            ></input>
+                            <p className="q-points">
+                              {q.points} Point{q.points != 1 && "s"}
+                            </p>
+                          </div>
                         </li>
                       );
                     })}

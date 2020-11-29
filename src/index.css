@@ -1009,6 +1009,10 @@ ul#ul-dbquestions {
   max-height: 95vh;
 }
 
+.editEvent-container {
+  position: relative;
+}
+
 .editEvent-container h3 {
   font-size: 26px;
   margin: 0px;
@@ -1170,6 +1174,10 @@ section#question-settings {
   font-size: 18px;
   font-weight: bolder;
   color: var(--pc);
+  position: sticky;
+  position: -webkit-sticky; /*Safari*/
+  top: 10px;
+  background-color: white;
 }
 
 .edit-event-button {
@@ -1240,6 +1248,49 @@ input[name="topicInput"] {
   background-color: white;
 }
 
+#liveQuestions-container {
+  border: 3px solid black;
+  border-radius: 15px;
+  width: 90vw;
+  margin: 10vh 0px;
+  padding: 20px 3vw;
+  box-sizing: border-box;
+  max-width: 1200px;
+}
+
+.single-liveQuestion {
+  position: relative;
+  margin-bottom: 15vh;
+  display: flex;
+  flex-direction: row;
+}
+
+.single-liveQuestion .q-number {
+  font-weight: bolder;
+  font-size: 20px;
+  background-color: black;
+  color: white;
+  padding: 3px 5px;
+  border-radius: 5px;
+  display: inline-block;
+  margin: 0px 20px 20px 0px;
+  box-shadow: 3px 3px 5px black;
+}
+
+.single-liveQuestion .q-text {
+  font-size: 22px;
+  font-weight: bolder;
+}
+
+.single-liveQuestion .col-3 {
+  margin-left: auto;
+}
+
+.answer-input {
+  font-size: 20px;
+  max-width: 150px;
+}
+
 .loading-container,
 .error-container {
   font-size: 40px;
@@ -1255,9 +1306,20 @@ input[name="topicInput"] {
   font-size: 26px;
 }
 
+.q-images {
+  display: flex;
+  flex-wrap: wrap;
+}
+
 .single-qImage {
-  max-width: 400px;
+  max-width: 60%;
   height: auto;
+  margin: 10px;
+}
+
+.q-points {
+  font-weight: bolder;
+  font-size: 18px;
 }
 
 footer {

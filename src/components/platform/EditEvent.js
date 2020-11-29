@@ -223,6 +223,7 @@ class EditEvent extends React.Component {
         questionId: questionData.questionId,
         questionRandomize: questionData.questionRandomize,
         tags: questionData.tags,
+        points: questionData.points,
         tagInput: "",
       };
     });
