@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{user} {
+      allow read, write;
+    }
+    
+    //NOTE: don't get confused. Firestore at its root has "databases", but inside the Firestore database, there is a collection also called "databases", for Aspyere databases.
+    
+    //anyone can access a database's info like name and description, but NOT nested documents
+    match /databases/{dbID} {
+    	allow read;
+      
+      allow update: if request.resource.data.memberCode == resource.data.memberCode;
+      
+      allow write: if request.auth.uid in resource.data.members || request.auth.uid in resource.data.admins;
+      
+      
+      allow create: if request.resource.data.members != null &&
+      request.resource.data.admins != null &&
+      request.resource.data.name != null &&
+      request.resource.data.isViewable != null;
+    }
+    
+    //rules for all nested questions in a database. NOTE the get() syntax, that is getting the data of the current database, the parent data.
+    match /databases/{dbID}/questions/{question} {
+    
+    	allow read, write: if
+      request.auth.uid in get(/databases/$(database)/documents/databases/$(dbID)).data.members || 
+      request.auth.uid in get(/databases/$(database)/documents/databases/$(dbID)).data.admins;
+      
+      allow read: if get(/databases/$(database)/documents/databases/$(dbID)).data.isViewable == true;
+      
+    }
+    
+    
+    //if request.resource.data.viewingCode == resource.data.viewingCode || 
+      //request.resource.data.editingCode == resource.data.editingCode ||
+    
+  }
+}
