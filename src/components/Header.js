@@ -6,6 +6,7 @@ import {
   pFirestore,
   fbFieldValue,
 } from "../services/config";
+import { PContext } from "../services/context";
 
 class Header extends React.Component {
   constructor() {
@@ -45,12 +46,32 @@ class Header extends React.Component {
     return (
       <header>
         <Link className="react-link" to="/">
-          <h1 id="title-h1">Aspyere</h1>
+          <h1 id="title-h1">
+            {this.context.platformName || "Aspyere"}
+            {this.context.platformName && (
+              <div id="h1-onAspyere">on Aspyere</div>
+            )}
+          </h1>
         </Link>
         <div id="header-space"></div>
-        <Link className="react-link header-link" to="/dblist">
-          Databases
-        </Link>
+        <div className="options-header">
+          <div className="header-text">
+            Options<i className="fas fa-caret-down"></i>
+          </div>
+          <ul className="dropdown">
+            <Link className="react-link d-item" to="/dblist">
+              Databases
+            </Link>
+
+            <button
+              className="d-item"
+              onClick={() => this.context.setIsShowPlatformPopup(true)}
+            >
+              Platform
+            </button>
+          </ul>
+        </div>
+
         <div id="header-account-area">
           {pAuth.currentUser ? (
             <a href="/account" id="header-account-button">
@@ -70,5 +91,6 @@ class Header extends React.Component {
     );
   }
 }
+Header.contextType = PContext;
 
 export default Header;

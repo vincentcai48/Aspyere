@@ -1,19 +1,23 @@
 import React from "react";
 import { pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
+import Loading from "../Loading";
 
-//PROPS: Object() platformSettings, Object() privateSettings
+//PROPS: Object() platformSettings, Object() privateSettings, Object() dbMapping
 class PlatformAdmin extends React.Component {
   constructor() {
     super();
     this.state = {
       /*all settings, public and private, coming from props*/
       showAddGroupOption: false,
+      showConnectDB: false,
       inputGroupOptionDescription: "",
       inputGroupOptionDifficulty: 0,
       isLoading: false,
       isError: false,
       settingsChanged: [], //a list of settings that were changed (eg: requireGroup, publicJoin, etc...)
+      dbToConnect: "",
+      connectDBError: -1,
     };
   }
 
@@ -50,9 +54,14 @@ class PlatformAdmin extends React.Component {
   addToSettingsChanged = (setting) => {
     this.setState((prevState) => {
       var newSettingsChanged = prevState.settingsChanged;
-      if (!newSettingsChanged.includes(setting))
+      var settingsToIgnore = ["dbToConnect"];
+      if (
+        !newSettingsChanged.includes(setting) &&
+        !settingsToIgnore.includes(setting)
+      )
         newSettingsChanged.push(setting);
       console.log(newSettingsChanged);
+
       return { settingsChanged: newSettingsChanged };
     });
   };
@@ -155,6 +164,54 @@ class PlatformAdmin extends React.Component {
       .catch(() => this.setState({ isError: true, isLoading: false }));
   };
 
+  connectDB = () => {
+    this.setState({ isLoading: true });
+    var connectDatabaseToPlatform = pFunctions.httpsCallable(
+      "connectDatabaseToPlatform"
+    );
+    console.log({
+      platformId: this.context.platform,
+      dbId: this.state.dbToConnect,
+    });
+    connectDatabaseToPlatform({
+      platformId: this.context.platform,
+      dbId: this.state.dbToConnect,
+    })
+      .then((res) => {
+        if (res.data.isError) {
+          this.setState({
+            isLoading: false,
+            isError: true,
+            connectDBError: res.data.errorType,
+          });
+        } else {
+          this.setState({
+            isLoading: false,
+            showConnectDB: false,
+            dbToConnect: "",
+          });
+        }
+      })
+      .catch((e) => {
+        this.setState({ isError: true, connectDBError: 4, isLoading: false });
+      });
+  };
+
+  disconnectDB = (dbId) => {
+    this.setState({ isLoading: true });
+    var disconnectDatabaseToPlatform = pFunctions.httpsCallable(
+      "disconnectDatabaseToPlatform"
+    );
+    disconnectDatabaseToPlatform({
+      platformId: this.context.platform,
+      dbId: dbId,
+    })
+      .then(() => {
+        this.setState({ isLoading: false });
+      })
+      .catch({ isError: true });
+  };
+
   render() {
     console.log(this.state);
     return (
@@ -191,9 +248,28 @@ class PlatformAdmin extends React.Component {
               })}
           </ul>
           <h3>Databases</h3>
+          <button
+            className="sb"
+            onClick={() =>
+              this.setState({ showConnectDB: true, dbToConnect: "" })
+            }
+          >
+            Connect a Database
+          </button>
           <ul className="platformAdmin-innerList">
-            <li></li>
+            {this.props.platformSettings.databases.map((db) => {
+              return (
+                <li className="single-db-platformAdmin" key={db}>
+                  <i class="fas fa-database"></i>
+                  {this.props.dbMapping[db]}
+                  <button onClick={() => this.disconnectDB(db)}>
+                    Disconnect
+                  </button>
+                </li>
+              );
+            })}
           </ul>
+          <h3>Settings</h3>
           <div className="toggle-container">
             <input
               type="checkbox"
@@ -294,28 +370,93 @@ class PlatformAdmin extends React.Component {
           </ul>
         </div>
 
-        {!this.state.showAddGroupOption && this.state.isLoading && (
+        {this.state.showConnectDB && (
           <div className="grayed-out-background">
-            <div className="popup">
-              <div className="loading">Loading ...</div>
-            </div>
-          </div>
-        )}
+            <div className="popup nsp connectDB">
+              <h4>Connect A Database</h4>
+              <p>
+                Use a database's public ID to connect it to this platform. NOTE:
+                you must administer this database to connect it
+              </p>
+              <input
+                value={this.state.dbToConnect}
+                name="dbToConnect"
+                onChange={this.changeState}
+                placeholder="Database Public ID"
+              ></input>
+              {this.state.isLoading && (
+                <div>
+                  <Loading />
+                </div>
+              )}
 
-        {!this.state.showAddGroupOption && this.state.isError && (
-          <div className="grayed-out-background">
-            <div className="popup">
-              <div>An Error Occurred</div>
-              <br></br>
+              {this.state.isError && (
+                <div>
+                  {(() => {
+                    switch (this.state.connectDBError) {
+                      case 1:
+                        return "Invalid Database Public ID";
+                        break;
+                      case 2:
+                        return "Not an admin of this platform";
+                        break;
+                      case 3:
+                        return "Server Error";
+                        break;
+                      case 4:
+                        return "Not an admin of this Database";
+                        break;
+                      default:
+                        return "Unknown Error";
+                    }
+                  })()}
+                </div>
+              )}
+              <button className="submit-button" onClick={this.connectDB}>
+                Connect
+              </button>
               <button
                 className="cancel-button"
-                onClick={() => this.setState({ isError: false })}
+                onClick={() => this.setState({ showConnectDB: false })}
               >
                 Cancel
               </button>
             </div>
           </div>
         )}
+
+        {!this.state.showAddGroupOption && this.state.isLoading && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <div className="loading">Loading ...</div>
+            </div>
+          </div>
+        )}
+
+        {!this.state.showAddGroupOption && this.state.isLoading && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <div className="loading">Loading ...</div>
+            </div>
+          </div>
+        )}
+
+        {!this.state.showAddGroupOption &&
+          !this.state.showConnectDB &&
+          this.state.isError && (
+            <div className="grayed-out-background">
+              <div className="popup">
+                <div>An Error Occurred</div>
+                <br></br>
+                <button
+                  className="cancel-button"
+                  onClick={() => this.setState({ isError: false })}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
         {this.state.showAddGroupOption && (
           <div className="grayed-out-background">

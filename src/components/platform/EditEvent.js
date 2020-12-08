@@ -404,7 +404,10 @@ class EditEvent extends React.Component {
                     id="select-database"
                     value={this.state.databaseId}
                     name="databaseId"
-                    onChange={this.changeState}
+                    onChange={(e) => {
+                      this.changeState(e);
+                      this.setState({ dbRandomize: false });
+                    }}
                   >
                     <option value={null}>--Choose Database--</option>
                     {this.props.dbMapping &&
@@ -503,7 +506,7 @@ class EditEvent extends React.Component {
                   var arr = [];
                   for (var i = 0; i < this.state.questions.length; i++) {
                     var q = this.state.questions[i];
-                    console.log(q);
+
                     arr.push(
                       <li className="single-question">
                         <button

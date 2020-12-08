@@ -1,26 +1,43 @@
 import { database } from "firebase";
 import React from "react";
-import { pAuth, pFirestore } from "../../services/config";
+import {
+  fbTimestamp,
+  pAuth,
+  pFirestore,
+  pFunctions,
+} from "../../services/config";
 import { PContext } from "../../services/context";
 import EventsList from "./EventsList";
 import GroupAdmin from "./GroupAdmin";
 import LobbyPlatform from "./LobbyPlatform";
 import MyStats from "./MyStats";
 import PlatformAdmin from "./PlatformAdmin";
+import personIcon from "../../images/person-icon.png";
+import Loading from "../Loading";
 
 class Platform extends React.Component {
   constructor() {
     super();
     this.state = {
+      isLoadingPlatform: true, //set to false when done loading. Set it when you set isJoined
       isJoined: false,
-      adminGroups: [], //if admin of a group, empty array if none
+      isGroupNotExist: false,
+      isGroupAdmin: false, //is admin of this group.
       isAdmin: false, //if admin of whole platform
       platformSettings: {},
+      groupData: {},
       userData: {},
       menuOption: 2, //0: Platform Admin, 1: Group Admin, 2: Events, 3: My Stats
       doesNotExist: false,
       privateSettings: {},
+      privateGroupSettings: {},
       dbMapping: {}, //just for admin, see componentDidMount()
+      isUnjoinError: false,
+      isUnjoinLoading: false,
+      allGroupUsers: [], //array of all users in this group, only fill out if groupAdmin,
+      recentActivity: [],
+      lastViewed: new Date(),
+      unsubscribe: () => {},
     };
   }
 
@@ -30,20 +47,28 @@ class Platform extends React.Component {
       var unsubscribe = pFirestore
         .collection("platforms")
         .doc(this.context.platform)
-        .onSnapshot((doc) => {
+        .onSnapshot(async (doc) => {
+          if (!doc.exists)
+            return this.setState({
+              doesNotExist: true,
+              isLoadingPlatform: false,
+            });
           var isAdmin = doc.data().admins.includes(pAuth.currentUser.uid);
           var databases = doc.data().databases;
           this.setState({
             platformSettings: { ...doc.data(), id: doc.id },
             isAdmin: isAdmin,
           });
+          this.context.setPlatformName(doc.data().name);
 
-          //first time, get this data just once
+          //first time, get this data just once. Snapshot listener updates when platform settings change. You don't want to do all this everytime the platform admin settings update.
           if (isFirstTime) {
+            //isJoined will then getGroupData, which will then getLastViewed.
             this.isJoined(doc.data().requireGroup);
-            this.accessPrivileges();
             if (isAdmin) this.getPrivateSettings();
             isFirstTime = false;
+            //HERE YOU SET THE SECOND STAGE TO FALSE
+            console.log("hello");
           }
           //Database Mapping
           if (isAdmin) {
@@ -52,9 +77,158 @@ class Platform extends React.Component {
         });
       this.setState({ unsubscribe: unsubscribe });
     } catch (e) {
-      this.setState({ doesNotExist: true });
+      this.setState({ doesNotExist: true, isLoadingPlatform: false });
     }
   }
+
+  //returns true or false if the user is in the platform or not
+  //ALSO sets usersettings when it calls the database.
+  isJoined = async (requireGroup) => {
+    console.log(requireGroup);
+    var doc = await pFirestore
+      .collection("platforms")
+      .doc(this.context.platform)
+      .collection("users")
+      .doc(pAuth.currentUser.uid)
+      .get();
+    if (!doc.exists) {
+      return this.setState({ isJoined: false, isLoadingPlatform: false });
+    } else {
+      if (requireGroup) {
+        //var userInfo = await pFirestore.collection("users").doc(pAuth.currentUser.uid).get();
+        if (
+          !doc.data().currentGroup ||
+          doc.data().currentGroup == "individual"
+        ) {
+          return this.setState({
+            isLoadingPlatform: false,
+            isJoined: false,
+            userData: { ...doc.data() },
+          });
+        } else {
+          await this.getGroupData(doc.data().currentGroup);
+          var userDataInGroup = await doc.ref
+            .collection(doc.data().currentGroup)
+            .doc("userData")
+            .get();
+
+          return this.setState({
+            isLoadingPlatform: false,
+            isJoined: true,
+            userData: { ...doc.data(), ...userDataInGroup.data() },
+          });
+        }
+      } else {
+        await this.getGroupData(doc.data().currentGroup);
+        var userDataInGroup = await doc.ref
+          .collection(doc.data().currentGroup)
+          .doc("userData")
+          .get();
+
+        return this.setState({
+          isLoadingPlatform: false,
+          isJoined: true,
+          userData: { ...doc.data(), ...userDataInGroup.data() },
+        });
+      }
+    }
+  };
+
+  componentWillUnmount() {
+    this.state.unsubscribe();
+  }
+
+  getLastViewed = async (groupId) => {
+    var doc = await pFirestore
+      .collection("platforms")
+      .doc(this.context.platform)
+      .collection("users")
+      .doc(pAuth.currentUser.uid)
+      .get();
+
+    var fieldName = "lastViewedGroupAdmin" + groupId;
+    var lastViewed = doc.data()[fieldName]
+      ? doc.data()[fieldName].toDate()
+      : new Date();
+    this.setState({
+      lastViewed: lastViewed,
+    });
+    await this.getGroupAdminData(lastViewed, new Date());
+    var updateUserViewTime = pFunctions.httpsCallable("updateUserViewTime");
+    updateUserViewTime({
+      platformId: this.context.platform,
+      fieldName: fieldName,
+    })
+      .then(() => {})
+      .catch((e) => console.log(e));
+  };
+
+  //only for Group Admin.
+  getAllGroupUsers = async () => {
+    var allUsers = await pFirestore
+      .collection("platforms")
+      .doc(this.context.platform)
+      .collection("users")
+      .where("currentGroup", "==", this.state.groupData.id)
+      .get();
+    var arr = [];
+    allUsers.docs.forEach((user) => {
+      arr.push({ id: user.id, data: user.data() });
+    });
+    this.setState({ allGroupUsers: arr });
+    return arr;
+  };
+
+  //pass in a date object to get all records after that. Call everytime you want to add 7 days. (or however many days)
+  getGroupAdminData = async (startDate, endDate) => {
+    var start = fbTimestamp.fromDate(startDate);
+    var end = fbTimestamp.fromDate(endDate);
+    var users;
+    if (this.state.allGroupUsers.length == 0) {
+      users = await this.getAllGroupUsers();
+    } else {
+      users = [...this.state.allGroupUsers];
+    }
+    var allRecords = [];
+    users.forEach((user) => {
+      allRecords.push(
+        pFirestore
+          .collection("platforms")
+          .doc(this.context.platform)
+          .collection("users")
+          .doc(user.id)
+          .collection(this.state.groupData.id)
+          .where("timeSubmitted", ">=", start)
+          .where("timeSubmitted", "<=", end)
+          .get()
+      );
+    });
+    var index = 0; //to match the record to the user.
+    Promise.all(allRecords).then((allRecordsResolved) => {
+      var recentActivity = [];
+      allRecordsResolved.forEach((list) => {
+        list.docs.forEach((e) => {
+          var newE = { ...e.data() };
+          newE.time = newE.timeSubmitted.toDate();
+          newE.userId = users[index]["id"];
+          delete newE.timeSubmitted;
+          recentActivity.push(newE);
+        });
+        index++;
+      });
+
+      var newArr = [...this.state.recentActivity];
+      //to ensure no duplicates
+      recentActivity.forEach((a) => {
+        if (!newArr.includes(a)) {
+          newArr.push(a);
+        }
+      });
+      //Sort DESCENDING time, so most recent first. REMEMBER: return an NUMBER (positive/negative) NOT a BOOLEAN!!!! This did not work if you return a comparison of times.
+      newArr.sort((a, b) => b.time.getTime() - a.time.getTime());
+      this.setState({ recentActivity: newArr });
+    });
+  };
 
   getPrivateSettings = () => {
     //Try to get the private settings
@@ -78,12 +252,13 @@ class Platform extends React.Component {
       if (!this.state.dbMapping[db]) {
         try {
           var dbData = await pFirestore.collection("databases").doc(db).get();
-          console.log(dbData.data().name);
-          this.setState((prevState) => {
-            var newDBMapping = prevState.dbMapping;
-            newDBMapping[db] = dbData.data().name;
-            return { dbMapping: newDBMapping };
-          });
+          if (dbData.exists) {
+            this.setState((prevState) => {
+              var newDBMapping = prevState.dbMapping;
+              newDBMapping[db] = dbData.data().name;
+              return { dbMapping: newDBMapping };
+            });
+          }
         } catch (e) {
           console.log("Nonexistent Database Error");
         }
@@ -91,64 +266,90 @@ class Platform extends React.Component {
     });
   };
 
-  //returns true or false if the user is in the platform or not
-  //ALSO sets usersettings when it calls the database.
-  isJoined = async (requireGroup) => {
-    console.log(requireGroup);
-    var doc = await pFirestore
+  getGroupData = async (groupId) => {
+    await pFirestore
       .collection("platforms")
       .doc(this.context.platform)
-      .collection("users")
-      .doc(pAuth.currentUser.uid)
-      .get();
-    if (!doc.exists) return this.setState({ isJoined: false });
-    else {
-      console.log(doc.data());
-      if (requireGroup) {
-        //var userInfo = await pFirestore.collection("users").doc(pAuth.currentUser.uid).get();
-        if (!doc.data().currentGroup) return this.setState({ isJoined: false });
-        else return this.setState({ isJoined: true, userInfo: doc.data() });
-      } else {
-        return this.setState({ isJoined: true, userInfo: doc.data() });
-      }
-    }
-    // var isJoined = false;
-    // docs.forEach(doc=>{
-    //     if(pAuth.currentUser.uid==doc.id) {
-    //         this.setState({userData: })
-    //         isJoined = true;
-    //     }
-    // })
-    // if(!isJoined) return false;
-    // else{
-    //     var userInfo = await pFirestore.collection("users").doc(pAuth.currentUser.uid).get();
-    //     if(!userInfo.data().group) return false;
-    //     else return true;
-    // }
+      .collection("groups")
+      .doc(groupId)
+      .get()
+      .then(async (doc) => {
+        if (!doc.exists) this.setState({ isGroupNotExist: true });
+        this.setState({
+          groupData: { ...doc.data(), id: doc.id },
+          isGroupAdmin:
+            doc.data().admins &&
+            doc.data().admins.includes(pAuth.currentUser.uid),
+          menuOption:
+            doc.data().admins &&
+            doc.data().admins.includes(pAuth.currentUser.uid)
+              ? 1
+              : 2,
+        });
+        await this.getLastViewed(doc.id);
+        //then get private group settings (group join code etc...)
+        await pFirestore
+          .collection("platforms")
+          .doc(this.context.platform)
+          .collection("privateSettings")
+          .doc(groupId)
+          .get()
+          .then((pgs) => {
+            if (pgs.exists) {
+              this.setState({ privateGroupSettings: pgs.data() });
+            }
+          });
+      })
+      .catch((e) => {
+        //if the group NO Longer exists
+        this.setState({ isJoined: false });
+      });
   };
 
   //queries all groups and sees if it is an admin, does NOT see if admin for whole platform, see the
   accessPrivileges = () => {
-    pFirestore
-      .collection("platforms")
-      .doc(this.context.platform)
-      .collection("groups")
-      .where("admins", "array-contains", pAuth.currentUser.uid)
-      .get()
-      .then((groups) => {
-        var arr = [];
-        groups.forEach((g) => {
-          arr.push({ ...g.data(), id: g.id });
+    // pFirestore
+    //   .collection("platforms")
+    //   .doc(this.context.platform)
+    //   .collection("groups")
+    //   .where("admins", "array-contains", pAuth.currentUser.uid)
+    //   .get()
+    //   .then((groups) => {
+    //     var arr = [];
+    //     groups.forEach((g) => {
+    //       arr.push({ ...g.data(), id: g.id });
+    //     });
+    //     this.setState({ adminGroups: arr });
+    //   });
+  };
+
+  unjoin = () => {
+    this.setState({ isUnjoinLoading: true });
+    var unjoinGroup = pFunctions.httpsCallable("unjoinGroup");
+    unjoinGroup({ platformId: this.context.platform })
+      .then(() => {
+        this.setState({
+          isUnjoinLoading: false,
+          isJoined: false,
+          groupData: {},
+          isGroupNotExist: false,
         });
-        this.setState({ adminGroups: arr });
-      });
+      })
+      .catch((e) =>
+        this.setState({ isUnjoinError: true, isUnjoinLoading: false })
+      );
   };
 
   render() {
-    console.log(this.state.dbMapping);
+    if (this.state.isLoadingPlatform)
+      return (
+        <div>
+          <Loading />
+        </div>
+      );
     var accessLevel = 0;
     if (this.state.isJoined) accessLevel += 2;
-    if (this.state.adminGroups.length > 0) accessLevel++;
+    if (this.state.isGroupAdmin) accessLevel++;
     if (this.state.isAdmin) accessLevel++;
     var mainComponent;
     switch (this.state.menuOption) {
@@ -157,11 +358,23 @@ class Platform extends React.Component {
           <PlatformAdmin
             platformSettings={this.state.platformSettings}
             privateSettings={this.state.privateSettings}
+            dbMapping={this.state.dbMapping}
           />
         );
         break;
       case 1:
-        mainComponent = <GroupAdmin />;
+        mainComponent = (
+          <GroupAdmin
+            groupData={this.state.groupData}
+            getGroupAdminData={this.getGroupAdminData}
+            recentActivity={this.state.recentActivity}
+            allUsers={this.state.allGroupUsers}
+            lastViewed={this.state.lastViewed}
+            setLastViewed={(v) => this.setState({ lastViewed: v })}
+            privateGroupSettings={this.state.privateGroupSettings}
+            groupName={this.state.platformSettings.groupName}
+          />
+        );
         break;
       case 2:
         mainComponent = (
@@ -171,21 +384,86 @@ class Platform extends React.Component {
           />
         );
         break;
+      case 4:
+        mainComponent = (
+          <MyStats
+            userData={this.state.userData}
+            groupName={this.state.platformSettings.groupName}
+          />
+        );
+        break;
       default:
-        mainComponent = <MyStats />;
+        mainComponent = (
+          <MyStats
+            userData={this.state.userData}
+            groupName={this.state.platformSettings.groupName}
+          />
+        );
     }
     if (this.state.doesNotExist)
       return (
-        <div>
-          <div>This Platform No Longer Exists</div>
+        <div className="grayed-out-background">
+          <div className="popup nsp">This Platform No Longer Exists</div>
         </div>
       );
+    if (this.state.isGroupNotExist) {
+      return (
+        <div className="grayed-out-background">
+          <div className="popup nsp">
+            This {this.state.platformSettings.groupName} No Longer Exists
+            {this.state.isUnjoinLoading ? (
+              <Loading />
+            ) : (
+              <button className="sb" onClick={this.unjoin}>
+                Join Another {this.state.platformSettings.groupName}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
     return (
       <div id="platform-container">
-        <h2>{this.state.platformSettings.name}</h2>
-        <p>{this.state.platformSettings.description}</p>
+        {this.state.isUnjoinLoading && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <Loading />
+            </div>
+          </div>
+        )}
+        {this.state.isUnjoinError && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <h5>Error Unjoining</h5>
+              <button
+                className="cancel-button"
+                onClick={() => this.setState({ isUnjoinError: false })}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
         {this.state.isJoined ? (
           <div>
+            <div id="group-header">
+              <h2 id="group-name">{this.state.groupData.name}</h2>
+              <p id="group-description">{this.state.groupData.description}</p>
+              <ul id="group-admins">
+                {this.state.groupData.admins &&
+                  this.state.groupData.admins.map((a) => (
+                    <li>
+                      <img className="person-icon" src={personIcon} />
+                      {this.context.usersMapping[a]}
+                    </li>
+                  ))}
+              </ul>
+              <button className="sb unjoin-button" onClick={this.unjoin}>
+                Switch {this.state.groupData && this.state.groupData.groupName}
+              </button>
+            </div>
+
             <div
               className="switch-menu"
               id="platform-switch-menu"
@@ -202,7 +480,7 @@ class Platform extends React.Component {
                   <span></span>
                 </button>
               )}
-              {this.state.adminGroups.length > 0 && (
+              {this.state.isGroupAdmin > 0 && (
                 <button
                   onClick={() => {
                     this.setState({ menuOption: 1 });
@@ -238,8 +516,14 @@ class Platform extends React.Component {
           <div>
             <LobbyPlatform
               requireGroup={this.state.platformSettings.requireGroup}
+              publicCreateGroup={this.state.platformSettings.publicCreateGroup}
+              groupOptions={this.state.platformSettings.groupOptions}
+              groupOptionsOn={this.state.platformSettings.groupOptionsOn}
               groupName={this.state.platformSettings.groupName}
+              setMenuOption={(a) => this.setState({ menuOption: a })}
               checkJoinedStatus={this.isJoined}
+              userData={this.state.userData}
+              privateSettings={this.state.privateSettings}
             />
           </div>
         )}

@@ -101,6 +101,11 @@ class EventsList extends React.Component {
           </button>
         )}
 
+        {this.state.allEvents.length == 0 && (
+          <div className="center-children">
+            <div>No Events Yet!</div>
+          </div>
+        )}
         <ul
           id="eventsList"
           className={this.state.isPast ? "past-events-ul" : ""}

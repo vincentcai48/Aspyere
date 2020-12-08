@@ -3,6 +3,7 @@ import {
   fbFieldValue,
   pAuth,
   pFirestore,
+  pFunctions,
   pStorageRef,
 } from "../../services/config";
 import ProgressBar from "../ProgressBar";
@@ -17,18 +18,22 @@ class DBDashboard extends React.Component {
     super();
     this.state = {
       menuOption: 0, //0 for Questions, 1 for Settings & Admin
+      isShowConnect: false,
 
       //To pass down to "DBQuestions" and "DBAdmin" as "parentState"
       dbId: null,
       accessLevel: 0,
       usersMap: {}, //mapping of users to their displayName,
-      memberCode: "",
       members: [],
       isViewable: false,
       admins: [],
       dbName: "",
       dbDescription: "",
       dbQuestions: [],
+      limit: 10,
+
+      //privateSettings:
+      memberCode: "klkl",
 
       //For code access,
       memberCodeTry: "",
@@ -72,9 +77,24 @@ class DBDashboard extends React.Component {
     var dbId = this.getURLParams();
     this.setState({ dbId: dbId });
     console.log(pAuth.currentUser);
+    //Get the privateSettings too
+    try {
+      pFirestore
+        .collection("dbPrivateSettings")
+        .doc(dbId)
+        .onSnapshot((snap) => {
+          this.setState({ ...snap.data() });
+        });
+    } catch (e) {
+      this.setState({
+        memberCode: "Not Accessible",
+      });
+    }
+    //only when the auth state loads.
     if (pAuth.currentUser) {
       console.log(pAuth.currentUser.uid);
       this.setState({ accessLevel: 0 });
+      //get the public settings
       try {
         pFirestore
           .collection("databases")
@@ -103,7 +123,6 @@ class DBDashboard extends React.Component {
                 accessLevel: accessLevel,
                 members: [...data["members"]],
                 admins: [...data["admins"]],
-                memberCode: data["memberCode"],
                 isViewable: data["isViewable"],
                 dbName: data["name"],
                 dbDescription: data["description"],
@@ -259,24 +278,21 @@ class DBDashboard extends React.Component {
   tryMemberCode = () => {
     this.setState({ tempDenyAccess: true });
 
-    pFirestore
-      .collection("databases")
-      .doc(this.state.dbId)
-      .update({
-        memberCode: this.state.memberCodeTry,
-        members: fbFieldValue.arrayUnion(pAuth.currentUser.uid),
-      })
-      .then(() => {
+    var tryDBMemberCode = pFunctions.httpsCallable("tryDBMemberCode");
+    tryDBMemberCode({
+      dbId: this.state.dbId,
+      memberCodeTry: this.state.memberCodeTry,
+    }).then((res) => {
+      console.log(res.data);
+      if (res.data) {
         this.setState({ tempDenyAccess: false });
-      })
-      .catch((e) => {
-        console.log(e);
+      } else {
         this.setState({
-          accessLevel: 0,
           displayError: true,
           tempDenyAccess: false,
         }); //tempDenyAccess is false because you already denied access if it is an error.
-      });
+      }
+    });
   };
 
   // // tryEditingCodeFromViewing = () => {
@@ -311,6 +327,22 @@ class DBDashboard extends React.Component {
   //     this.setState({userToPromote: userId})
   // }
 
+  copyDbId = () => {
+    navigator.permissions.query({ name: "clipboard-write" }).then((result) => {
+      if (result.state == "granted" || result.state == "prompt") {
+        navigator.clipboard.writeText(this.state.dbId).then(
+          () => {
+            alert("Copied to clipboard");
+            this.setState({ isShowConnect: false });
+          },
+          () => {
+            alert("Error");
+          }
+        );
+      }
+    });
+  };
+
   render() {
     console.log(this.state.dbQuestions);
     if (!pAuth.currentUser) return <Auth />;
@@ -331,6 +363,12 @@ class DBDashboard extends React.Component {
             <div id="db-title">
               <h2>{this.state.dbName}</h2>
               <p>{this.state.dbDescription}</p>
+              <button
+                onClick={() => this.setState({ isShowConnect: true })}
+                className="bb connect-button"
+              >
+                <i className="fas fa-link"></i>Connect
+              </button>
             </div>
             {this.state.accessLevel > 0 && !this.state.tempDenyAccess ? (
               <div>
@@ -372,7 +410,10 @@ class DBDashboard extends React.Component {
 
                 {this.state.menuOption == 0 ? (
                   <div>
-                    <DBQuestions parentState={this.state} />
+                    <DBQuestions
+                      parentState={this.state}
+                      changeParentState={(updates) => this.setState(updates)}
+                    />
                   </div>
                 ) : (
                   <div>
@@ -401,12 +442,35 @@ class DBDashboard extends React.Component {
               </div>
             )}
 
-            {this.state.displayError && (
+            {this.state.isShowConnect && (
               <div className="grayed-out-background">
-                <div className="popup">
-                  <div>Access Error</div>
+                <div className="popup dbId-container nsp">
+                  <h4>Public Database Identifier</h4>
+                  <p>
+                    Use to connect this database to platforms you administer.
+                  </p>
+                  <main>
+                    <div>{this.state.dbId}</div>
+                    <button className="copy-button" onClick={this.copyDbId}>
+                      <i className="far fa-copy"></i>
+                    </button>
+                  </main>
                   <button
                     className="cancel-button"
+                    onClick={() => this.setState({ isShowConnect: false })}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {this.state.displayError && (
+              <div className="grayed-out-background">
+                <div className="popup nsp">
+                  <div>Access Error</div>
+                  <button
+                    className="cancel-button nsp"
                     onClick={() => this.setState({ displayError: false })}
                   >
                     Try Again

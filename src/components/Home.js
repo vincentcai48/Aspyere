@@ -1,31 +1,141 @@
-import React from "react"
-import { pAuth } from "../services/config";
+import React from "react";
+import { pAuth, pFirestore } from "../services/config";
 import { PContext } from "../services/context";
-import Auth from "./Auth"
+import Auth from "./Auth";
 import DBList from "./database/DBList";
 import Platform from "./platform/Platform";
 import PlatformList from "./platform/PlatformList";
 
+class Home extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      // displayOrganizations: false,
+      // defaultOrganization: null
+      prevIsShowPlatformPopup: false, //just to keep track of what it was previously, and if it's not what it was previously, getPlatforms() again
+    };
+  }
 
-class Home extends React.Component{
-    constructor(){
-        super();
-        this.state = {
-            displayOrganizations: false,
-            defaultOrganization: null
+  componentDidMount() {
+    this.setState({
+      prevIsShowPlatformPopup: this.context.isShowPlatformPopup,
+    });
+  }
+
+  getPlatforms = async () => {
+    this.setState({
+      prevIsShowPlatformPopup: this.context.isShowPlatformPopup,
+    });
+    console.log("GETTING PLATFORMS");
+    if (this.context.rootUserData && this.context.rootUserData.allPlatforms) {
+      this.context.rootUserData.allPlatforms.forEach(async (pId) => {
+        var withSameId = this.context.allPlatforms.filter((p) => p.id == pId);
+        if (withSameId.length > 0) return;
+        else {
+          var newP = await pFirestore.collection("platforms").doc(pId).get();
+          console.log(newP.data());
+          this.context.setAllPlatforms([
+            ...this.context.allPlatforms,
+            { ...newP.data(), id: newP.id },
+          ]);
         }
+      });
     }
+  };
 
-
-    render(){
-        console.log(this.context.platform)
-        return(
-            <div>
-                {this.context.platform?<div><Platform/></div>:<PlatformList/>}
-            </div>
-        )
+  render() {
+    console.log(this.context.platform, this.context.allPlatforms);
+    if (
+      this.state.prevIsShowPlatformPopup != this.context.isShowPlatformPopup
+    ) {
+      this.getPlatforms();
     }
+    return (
+      <div>
+        {this.context.userId ? (
+          <div>
+            {this.context.platform ? (
+              <div>
+                <Platform />
+              </div>
+            ) : (
+              <PlatformList />
+            )}
+
+            {this.context.isShowPlatformPopup && (
+              <div className="grayed-out-background">
+                <div className="popup platformPopup">
+                  <div className="first-row">
+                    <h4 style={{ fontSize: "24px" }}>Platforms</h4>
+                    <button
+                      className="cancel-button x-out"
+                      onClick={() => this.context.setIsShowPlatformPopup(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <ul id="user-allPlatforms">
+                    {this.context.rootUserData &&
+                      this.context.rootUserData.allPlatforms &&
+                      this.context.rootUserData.allPlatforms.map((p) => {
+                        return (
+                          <li className="single-myPlatform">
+                            <div>
+                              {this.context.platform == p ? (
+                                <div className="joined-text">Joined</div>
+                              ) : (
+                                <button
+                                  className="join-platform-button"
+                                  onClick={async () => {
+                                    await this.context.joinPlatform(p);
+                                    this.context.setIsShowPlatformPopup(false);
+                                    window.location.reload();
+                                  }}
+                                >
+                                  Join
+                                </button>
+                              )}
+                            </div>
+                            {(() => {
+                              var platforms = this.context.allPlatforms.filter(
+                                (pl) => pl.id == p
+                              );
+                              console.log(platforms);
+                              if (!platforms[0]) return "";
+                              else {
+                                var pData = platforms[0];
+                                return (
+                                  <div className="platform-nd">
+                                    <h5>{pData.name}</h5>
+                                    <p>{pData.description}</p>
+                                  </div>
+                                );
+                              }
+                            })()}
+                          </li>
+                        );
+                      })}
+                  </ul>
+                  <button
+                    className="sb"
+                    onClick={() => {
+                      this.context.setPlatform(null);
+                      this.context.setIsShowPlatformPopup(false);
+                    }}
+                  >
+                    Explore New Platforms
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Auth />
+        )}
+      </div>
+    );
+  }
 }
-Home.contextType = PContext
+Home.contextType = PContext;
 
 export default Home;
