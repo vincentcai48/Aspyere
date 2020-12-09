@@ -96,10 +96,7 @@ class Platform extends React.Component {
     } else {
       if (requireGroup) {
         //var userInfo = await pFirestore.collection("users").doc(pAuth.currentUser.uid).get();
-        if (
-          !doc.data().currentGroup ||
-          doc.data().currentGroup == "individual"
-        ) {
+        if (!doc.data().currentGroup) {
           return this.setState({
             isLoadingPlatform: false,
             isJoined: false,
@@ -119,7 +116,22 @@ class Platform extends React.Component {
           });
         }
       } else {
-        await this.getGroupData(doc.data().currentGroup);
+        //still need this, because even if you join indiidually, currentGroup is set to "individual", NOT null
+        if (!doc.data().currentGroup) {
+          return this.setState({
+            isLoadingPlatform: false,
+            isJoined: false,
+            userData: { ...doc.data() },
+          });
+        }
+        if (doc.data().currentGroup !== "individual") {
+          //only do this if not individual join, or else it will say the group doesn't exists.
+          await this.getGroupData(doc.data().currentGroup);
+        } else {
+          this.setState({ isGroupAdmin: false, menuOption: 2 });
+        }
+
+        //STILL do this for individual join, because there is still userData (aka the stats) for joining individually.
         var userDataInGroup = await doc.ref
           .collection(doc.data().currentGroup)
           .doc("userData")
@@ -139,16 +151,16 @@ class Platform extends React.Component {
   }
 
   getLastViewed = async (groupId) => {
-    var doc = await pFirestore
-      .collection("platforms")
-      .doc(this.context.platform)
-      .collection("users")
-      .doc(pAuth.currentUser.uid)
-      .get();
+    // var doc = await pFirestore
+    //   .collection("platforms")
+    //   .doc(this.context.platform)
+    //   .collection("users")
+    //   .doc(pAuth.currentUser.uid)
+    //   .get();
 
     var fieldName = "lastViewedGroupAdmin" + groupId;
-    var lastViewed = doc.data()[fieldName]
-      ? doc.data()[fieldName].toDate()
+    var lastViewed = this.state.userData[fieldName]
+      ? this.state.userData[fieldName].toDate()
       : new Date();
     this.setState({
       lastViewed: lastViewed,
@@ -381,6 +393,7 @@ class Platform extends React.Component {
           <EventsList
             isAdmin={this.state.isAdmin}
             dbMapping={this.state.dbMapping}
+            userData={this.state.userData}
           />
         );
         break;
@@ -448,8 +461,13 @@ class Platform extends React.Component {
         {this.state.isJoined ? (
           <div>
             <div id="group-header">
-              <h2 id="group-name">{this.state.groupData.name}</h2>
-              <p id="group-description">{this.state.groupData.description}</p>
+              <h2 id="group-name">
+                {this.state.groupData.name || "Individual Join"}
+              </h2>
+              <p id="group-description">
+                {this.state.groupData.description ||
+                  `Joined this platform without joining a ${this.state.platformSettings.groupName}`}
+              </p>
               <ul id="group-admins">
                 {this.state.groupData.admins &&
                   this.state.groupData.admins.map((a) => (
@@ -524,6 +542,7 @@ class Platform extends React.Component {
               checkJoinedStatus={this.isJoined}
               userData={this.state.userData}
               privateSettings={this.state.privateSettings}
+              publicJoin={this.state.platformSettings.publicJoin}
             />
           </div>
         )}

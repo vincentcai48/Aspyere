@@ -450,7 +450,9 @@ class GroupAdmin extends React.Component {
                         <img className="person-icon" src={personIcon} />
                         <div>{this.context.usersMapping[user.id]}</div>
                         <div>
-                          {this.props.groupData.admins.includes(user.id) ? (
+                          {this.props.groupData &&
+                          this.props.groupData.admins &&
+                          this.props.groupData.admins.includes(user.id) ? (
                             <span className="admin-label">Admin</span>
                           ) : (
                             <button

@@ -2214,6 +2214,27 @@ input[name="topicInput"] {
   display: block;
 }
 
+#first-row-lobby {
+  align-items: center;
+}
+
+#first-row-lobby h2 {
+  font-size: 36px;
+  text-shadow: 1px 1px 2px black;
+  margin-right: 30px;
+  margin-bottom: 20px;
+}
+
+#first-row-lobby .sb,
+#first-row-lobby .bb {
+  margin-left: 0px;
+  margin-bottom: 20px;
+}
+
+#first-row-lobby .create-button {
+  margin: 10px 0px;
+}
+
 footer {
   width: 100%;
   box-sizing: border-box;

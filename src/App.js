@@ -159,7 +159,7 @@ class App extends React.Component {
 
           {this.state.isLoading && (
             <div className="grayed-out-background">
-              <div className="popup">
+              <div className="popup nsp">
                 <Loading />
               </div>
             </div>

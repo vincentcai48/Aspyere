@@ -328,6 +328,67 @@ exports.updateMemberCode = functions.https.onCall(async (data, context) => {
 });
 //returns true if success, false if error.
 
+//data: {platformId: , tryJoinCode: }
+exports.joinIndividually = functions.https.onCall(async (data, context) => {
+  try {
+    var platformDoc = await db
+      .collection("platforms")
+      .doc(data.platformId)
+      .get();
+    if (!platformDoc.exists) return { isError: true, errorType: 2 };
+    else {
+      if (platformDoc.data().publicJoin) {
+        await joinGroupInDB(
+          context.auth.uid,
+          data.platformId,
+          "individual",
+          false
+        );
+        return { isError: false };
+      } else {
+        var userData = await db
+          .collection("platforms")
+          .doc(data.platformId)
+          .collection("users")
+          .doc(context.auth.uid)
+          .get();
+        if (
+          userData.exists &&
+          userData.data().joinedGroups &&
+          userData.data().joinedGroups.includes("individual")
+        ) {
+          await joinGroupInDB(
+            context.auth.uid,
+            data.platformId,
+            "individual",
+            false
+          );
+          return { isError: false };
+        }
+
+        var privateSettings = await platformDoc.ref
+          .collection("privateSettings")
+          .doc("privateSettings")
+          .get();
+        if (privateSettings.data().joinCode == data.tryJoinCode) {
+          await joinGroupInDB(
+            context.auth.uid,
+            data.platformId,
+            "individual",
+            false
+          );
+          return { isError: false };
+        } else {
+          return { isError: true, errorType: 1 };
+        }
+      }
+    }
+  } catch (e) {
+    return { isError: true, errorType: 3 };
+  }
+});
+//returns {isError: ,errorType: 1- joinCode is wrong, 2- platform doesn't exist 3- server error}
+
 //data: {platformId: }
 //just sets the group to null
 exports.unjoinGroup = functions.https.onCall(async (data, context) => {
@@ -351,7 +412,7 @@ exports.joinGroup = functions.https.onCall(async (data, context) => {
     groupData.data().isPublic ||
     groupData.data().admins.includes(context.auth.uid)
   ) {
-    await joinGroupInDB(context.auth.uid, data.platformId, data.groupId);
+    await joinGroupInDB(context.auth.uid, data.platformId, data.groupId, false);
     return true;
   } else {
     var userData = await db
@@ -691,7 +752,12 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
     return { isError: true, errorType: 3 };
   if (new Date().getTime() > endTime) return { isError: true, errorType: 4 };
 
-  //Step 2: get the user records, to check if the user has not joined this platform, or for double-doing, and get the group id.
+  //Steps 2 and 2.1: check if user has already SUBMITTED for this event, either for this group (return feedback) or in a different group (return error)
+  //Step 2.2: if user has not submitted check if user has OPENED this event (but not yet submitted), if so, return the eventRecords.
+  //Steps 3 & beyond: if user has neither submitte nor opened (is opening for first time), generate the questions and save them to userRecords so user can retrieve them the next time they open them.
+
+  //NOTE: MUST do this before 2.1, because step 2.1 will return an error if it is in eventsCompleted, even if it is completed in this group. Therefore, first get the feedback, then if no feedback and it is completed, then it was completed in another group
+  //Step 2: Return feedback if any: get the user records, to check if the user has not joined this platform, or for double-doing, and get the group id.
   var userRecords = await getUserRecords(
     data.platformId,
     context.auth.uid,
@@ -709,7 +775,25 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
       endTime: endTime, //in milliseconds
     };
 
-  //Step 2.1: Before anything, check if there are already records of this user in this event in this platform, the questions already being generated.
+  //Step 2.1: check if this event has already been completed in the user's doc "completedEvents" array. If so, it has been done in another group and return an error
+  var userDoc = await db
+    .collection("platforms")
+    .doc(data.platformId)
+    .collection("users")
+    .doc(context.auth.uid)
+    .get();
+  console.log(userDoc.data().completedEvents.includes(data.eventId));
+  if (
+    userDoc.exists &&
+    userDoc.data().completedEvents &&
+    userDoc.data().completedEvents.includes(data.eventId)
+  ) {
+    return { isError: true, errorType: 7 };
+  }
+
+  //Now we checked if it has been completed, now in 2.2 check if it is progress.
+
+  //Step 2.2: Before generating new questions, check if there are already records of this user in this event in this platform, the questions already being generated.
   //Must do this AFTER the above steps, to make sure you don't return questions when the event is over, hasn't started, or already submitted
   var eventRecord = await db
     .collection("platforms")
@@ -739,6 +823,8 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
     };
   }
 
+  //Now that all the checks have been completed, we know it is not been completed or started. Now start preparing to generate new questions, starting at Step 3.
+
   //Step 3: Get the difficulty:
   //if no group id, and working individually, auto set it to 100.
   var difficulty = 0;
@@ -746,6 +832,8 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
   else {
     //else use the group ID to get the group's difficulty;
     var groupDoc = await db
+      .collection("platforms")
+      .doc(data.platformId)
       .collection("events")
       .doc(data.eventId)
       .collection("groups")
@@ -805,7 +893,7 @@ An object with properties:
 -isError: true if error, false otherwise
 -isFeedback, true if has records, returns the records, false otherwise
   -records: Object of the records for this specific event.
--errorType: only if error, 1 for already done this question, 2 for cannot find the event, 3 for not started yet, 4 for already finished, 5 for user not joined platform, 6 for auth error.
+-errorType: only if error, 1 for already done this question, 2 for cannot find the event, 3 for not started yet, 4 for already finished, 5 for user not joined platform, 6 for auth error, 7 for completed already in a different group (not showing records, because no records for this group).
 -final questions: the data object from each of the questions generated.
 -eventName
 -eventDescription
@@ -1098,7 +1186,7 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
   ) {
     return { isError: true, errorType: 4 };
   }
-  
+
   // var existingUserRecords = await getUserRecords(
   //   data.platformId,
   //   context.auth.uid,

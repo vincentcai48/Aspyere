@@ -127,6 +127,9 @@ class LiveQuestions extends React.Component {
       case 6:
         return "Authentication Error. Please Log in";
         break;
+      case 7:
+        return "Already completed this event in another group";
+        break;
       default:
         return "An Error Occured";
     }

@@ -4,7 +4,7 @@ import { fbTimestamp, pFirestore } from "../../services/config";
 import { PContext } from "../../services/context";
 import EditEvent from "./EditEvent";
 
-//PROPS: Boolean isAdmin, Object dbMapping
+//PROPS: Boolean isAdmin, Object dbMapping, Object userData,
 class EventsList extends React.Component {
   constructor() {
     super();
@@ -134,6 +134,14 @@ class EventsList extends React.Component {
               this.state.allCountdowns[num] &&
               this.state.allCountdowns[num] < duration * -1000;
             if (isOver && !this.state.isPast) return;
+            if (
+              this.props.userData &&
+              this.props.userData.completedEvents &&
+              this.props.userData.completedEvents.includes(e.id)
+            ) {
+              console.log(e.id + "completed already");
+              return;
+            }
             return (
               <li
                 key={e.id}

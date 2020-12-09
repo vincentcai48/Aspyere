@@ -3,7 +3,7 @@ import { pAuth, pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
 import Loading from "../Loading";
 
-//PROPS: Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), String groupName (what to call a "group". Eg: a "class"), Boolean requireGroup, Boolean publicCreateGroup, Boolean groupOptionsOn, Array[] groupOptions, Function() checkJoinedStatus (to use when you join), Function() setMenuOption, Object() privateSettings
+//PROPS: Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), String groupName (what to call a "group". Eg: a "class"), Boolean requireGroup, Boolean publicCreateGroup, Boolean groupOptionsOn, Array[] groupOptions, Function() checkJoinedStatus (to use when you join), Function() setMenuOption, Object() privateSettings, Boolean publicJoin
 class LobbyPlatform extends React.Component {
   constructor() {
     super();
@@ -51,6 +51,9 @@ class LobbyPlatform extends React.Component {
   };
 
   joinGroup = async (groupId) => {
+    if (groupId == "individual") {
+      return this.joinIndividually();
+    }
     this.setState({ isLoading: true });
     var cloudJoinGroup = pFunctions.httpsCallable("joinGroup");
     try {
@@ -68,6 +71,26 @@ class LobbyPlatform extends React.Component {
       }
     } catch (e) {
       this.setState({ isLoading: false, showAccessError: true });
+    }
+  };
+
+  joinIndividually = async () => {
+    try {
+      this.setState({ isLoading: true });
+      var joinIndividually = pFunctions.httpsCallable("joinIndividually");
+      var res = await joinIndividually({
+        platformId: this.context.platform,
+        tryJoinCode: this.state.accessCodeTry,
+      });
+      if (res.data.isError) {
+        console.log("Error");
+        this.setState({ showAccessError: true, isLoading: false }); //Note: this will just show it is an error, won't actually show what type of error.
+      } else {
+        await this.props.checkJoinedStatus(this.props.requireGroup);
+        this.state({ isLoading: false });
+      }
+    } catch (e) {
+      this.setState({ showAccessError: true, isLoading: false });
     }
   };
 
@@ -129,7 +152,33 @@ class LobbyPlatform extends React.Component {
           <div id="first-row-lobby">
             <h2>Join a {this.props.groupName}</h2>
             {!this.props.requireGroup && (
-              <button id="individual-join">Or Join Individually</button>
+              <button
+                id="individual-join"
+                className={
+                  (this.props.userData &&
+                    this.props.userData.joinedGroups &&
+                    this.props.userData.joinedGroups.includes("individual")) ||
+                  this.props.publicJoin
+                    ? "bb"
+                    : "sb"
+                }
+                onClick={() => {
+                  if (
+                    (this.props.userData &&
+                      this.props.userData.joinedGroups &&
+                      this.props.userData.joinedGroups.includes(
+                        "individual"
+                      )) ||
+                    this.props.publicJoin
+                  ) {
+                    this.joinIndividually();
+                  } else {
+                    this.setState({ groupToJoin: "individual" });
+                  }
+                }}
+              >
+                Or Join Individually
+              </button>
             )}
             <button
               onClick={() =>
