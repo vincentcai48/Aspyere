@@ -36,10 +36,12 @@ class App extends React.Component {
       allPlatforms: [], //all platforms you need to store, includes platforms to show on homepage and also the users' joined platforms.
       setAllPlatforms: (a) => this.setState({ allPlatforms: a }),
       joinPlatform: this.joinPlatform,
+      isMobile: false,
     };
   }
 
   componentDidMount() {
+    this.setState({ isMobile: window.innerWidth > 576 ? false : true });
     pAuth.onAuthStateChanged((user) => {
       if (user) {
         this.setState({
@@ -129,7 +131,7 @@ class App extends React.Component {
                   </Route>
                   {/**If not the homepage, and not logged in, just go to the Auth component*/}
                   {this.state.userId ? (
-                    <div>
+                    <div id="notHome-main">
                       <Route path="/questions">
                         <LiveQuestions />
                       </Route>
@@ -151,7 +153,7 @@ class App extends React.Component {
                   )}
                 </Switch>
               ) : (
-                <Loading />
+                <Loading isFullCenter={true} />
               )}
             </div>
             <Footer />

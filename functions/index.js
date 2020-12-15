@@ -32,18 +32,20 @@ exports.helloWorld = functions.https.onRequest(async (request, response) => {
 // })
 
 exports.onNewUser = functions.auth.user().onCreate((user) => {
-  db.collection("users").doc(user.uid).set({
-    dateCreated: admin.firestore.FieldValue.serverTimestamp(),
-    displayName: user.displayName,
-    uid: user.uid,
-    email: user.email,
-    imageURL: user.photoURL,
-    platform: null,
-    allPlatforms: [],
-  });
+  db.collection("users")
+    .doc(user.uid)
+    .set({
+      dateCreated: admin.firestore.FieldValue.serverTimestamp(),
+      displayName: user.displayName || user.email.split("@")[0],
+      uid: user.uid,
+      email: user.email,
+      imageURL: user.photoURL,
+      platform: null,
+      allPlatforms: [],
+    });
   db.collection("settings")
     .doc("usersMapping")
-    .update({ [user.uid]: { displayName: user.displayName } });
+    .update({ [user.uid]: { displayName: user.displayName || user.email } });
 });
 
 //data: {name: , description: }
@@ -131,9 +133,7 @@ exports.createDB = functions.https.onCall(async (data, context) => {
 //returns the new DB id if success, return null if error.
 
 function generateRandomCode() {
-  return (new Date().getTime() * Math.random())
-    .toString(36)
-    .replaceAll(".", "");
+  return (new Date().getTime() * Math.random()).toString(36).replace(".", "");
 }
 
 //data: {dbId: , userId: }
@@ -501,6 +501,7 @@ async function joinGroupInDB(
       .doc(userId)
       .set({
         currentGroup: groupId,
+        completedEvents: [],
         joinedGroups: [groupId], //create this. These are the groups already joined at least once before
       });
   } else {
@@ -737,24 +738,20 @@ async function checkIfAdmin(platformId, userId) {
 
 //data: {platformId: , eventId: }
 exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
+  //Step 1: first check if the user is logged in, and get the event doc (for name and description, also checking if platform and event ids are valid)
   if (!context.auth.uid) return { isError: true, errorType: 6 };
-
-  //Step 1: check if the platform and event IDs are even valid
   var doc = await db
     .collection("platforms")
     .doc(data.platformId)
     .collection("events")
     .doc(data.eventId)
     .get();
-  if (!doc.exists) return { isError: true, errorType: 2 };
-  var endTime = doc.data().endTime.toDate().getTime();
-  if (new Date().getTime() < doc.data().startTime.toDate().getTime())
-    return { isError: true, errorType: 3 };
-  if (new Date().getTime() > endTime) return { isError: true, errorType: 4 };
+  if (!doc.exists) return { isError: true, errorType: 2 }; //if invalid event or platform Id (so the doc is not found), return an error.
 
   //Steps 2 and 2.1: check if user has already SUBMITTED for this event, either for this group (return feedback) or in a different group (return error)
-  //Step 2.2: if user has not submitted check if user has OPENED this event (but not yet submitted), if so, return the eventRecords.
-  //Steps 3 & beyond: if user has neither submitte nor opened (is opening for first time), generate the questions and save them to userRecords so user can retrieve them the next time they open them.
+  //Step 2.3: if not yet submitted, check if within time frame to open.
+  //Step 2.4: if not sumbitted and within correct time frame, check if user has OPENED this event (but not yet submitted), if so, return the eventRecords.
+  //Steps 2 & beyond: if user has neither submitted nor opened (is opening for first time), generate the questions and save them to userRecords so user can retrieve them the next time they open them.
 
   //NOTE: MUST do this before 2.1, because step 2.1 will return an error if it is in eventsCompleted, even if it is completed in this group. Therefore, first get the feedback, then if no feedback and it is completed, then it was completed in another group
   //Step 2: Return feedback if any: get the user records, to check if the user has not joined this platform, or for double-doing, and get the group id.
@@ -782,7 +779,7 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
     .collection("users")
     .doc(context.auth.uid)
     .get();
-  console.log(userDoc.data().completedEvents.includes(data.eventId));
+
   if (
     userDoc.exists &&
     userDoc.data().completedEvents &&
@@ -791,9 +788,15 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
     return { isError: true, errorType: 7 };
   }
 
-  //Now we checked if it has been completed, now in 2.2 check if it is progress.
+  //Now we checked if it has been completed, now it is either in progress or not yet started.
 
-  //Step 2.2: Before generating new questions, check if there are already records of this user in this event in this platform, the questions already being generated.
+  //Step 2.3: check if it is within the time frame.
+  var endTime = doc.data().endTime.toDate().getTime();
+  if (new Date().getTime() < doc.data().startTime.toDate().getTime())
+    return { isError: true, errorType: 3 };
+  if (new Date().getTime() > endTime) return { isError: true, errorType: 4 };
+
+  //Step 2.4: Before generating new questions, check if there are already records of this user in this event in this platform, the questions already being generated.
   //Must do this AFTER the above steps, to make sure you don't return questions when the event is over, hasn't started, or already submitted
   var eventRecord = await db
     .collection("platforms")
@@ -823,7 +826,7 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
     };
   }
 
-  //Now that all the checks have been completed, we know it is not been completed or started. Now start preparing to generate new questions, starting at Step 3.
+  //Now that all the checks have been completed, we know it is not been completed or started. Now start preparing to generate new questions, starting at Step 2.
 
   //Step 3: Get the difficulty:
   //if no group id, and working individually, auto set it to 100.

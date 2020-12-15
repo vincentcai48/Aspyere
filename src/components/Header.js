@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import {
   pAuth,
   googleAuthProvider,
@@ -7,11 +7,15 @@ import {
   fbFieldValue,
 } from "../services/config";
 import { PContext } from "../services/context";
+import personIcon from "../images/person-icon.png";
 
 class Header extends React.Component {
   constructor() {
     super();
-    this.state = {};
+    this.state = {
+      redirect: null,
+      showMobileDropdown: false,
+    };
   }
 
   logout = () => {
@@ -45,48 +49,72 @@ class Header extends React.Component {
   render() {
     return (
       <header>
-        <Link className="react-link" to="/">
-          <h1 id="title-h1">
-            {this.context.platformName || "Aspyere"}
-            {this.context.platformName && (
-              <div id="h1-onAspyere">on Aspyere</div>
-            )}
-          </h1>
-        </Link>
-        <div id="header-space"></div>
-        <div className="options-header">
-          <div className="header-text">
-            Options<i className="fas fa-caret-down"></i>
-          </div>
-          <ul className="dropdown">
-            <Link className="react-link d-item" to="/dblist">
-              Databases
-            </Link>
-
-            <button
-              className="d-item"
-              onClick={() => this.context.setIsShowPlatformPopup(true)}
-            >
-              Platform
-            </button>
-          </ul>
-        </div>
-
-        <div id="header-account-area">
-          {pAuth.currentUser ? (
-            <a href="/account" id="header-account-button">
-              <img
-                id="header-profilepic"
-                src={pAuth.currentUser.photoURL}
-              ></img>
-              Account
-            </a>
-          ) : (
-            <button id="header-account-button" onClick={this.login}>
-              Login
-            </button>
+        <div className="header-s1">
+          <Link className="react-link" to="/">
+            <h1 id="title-h1">
+              {this.context.platformName || "Aspyere"}
+              {this.context.platformName && (
+                <div id="h1-onAspyere">on&nbsp;Aspyere</div>
+              )}
+            </h1>
+          </Link>
+          {this.context.isMobile && (
+            <div
+              id="menu-button"
+              className="fas fa-bars"
+              onClick={() => {
+                this.setState((p) => {
+                  return { showMobileDropdown: !p.showMobileDropdown };
+                });
+              }}
+            ></div>
           )}
         </div>
+
+        {!this.context.isMobile && <div id="header-space"></div>}
+
+        {!this.state.showMobileDropdown && this.context.isMobile ? (
+          <span></span>
+        ) : (
+          <div className="header-s2">
+            <div className="options-header">
+              <div className="header-text">
+                Options<i className="fas fa-caret-down"></i>
+              </div>
+              <ul className="dropdown">
+                <Link className="react-link d-item" to="/dblist">
+                  Databases
+                </Link>
+
+                <Link
+                  to="/"
+                  className="d-item react-link"
+                  onClick={() => {
+                    this.context.setIsShowPlatformPopup(true);
+                  }}
+                >
+                  Platform
+                </Link>
+              </ul>
+            </div>
+
+            <div id="header-account-area">
+              {pAuth.currentUser ? (
+                <a href="/account" id="header-account-button">
+                  <img
+                    id="header-profilepic"
+                    src={pAuth.currentUser.photoURL || personIcon}
+                  ></img>
+                  Account
+                </a>
+              ) : (
+                <button id="header-account-button" onClick={this.login}>
+                  Login
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </header>
     );
   }

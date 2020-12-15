@@ -12,6 +12,7 @@ import Auth from "../Auth";
 import { Link } from "react-router-dom";
 import DBAdmin from "./DBAdmin";
 import DBQuestions from "./DBQuestions";
+import Loading from "../Loading";
 
 class DBDashboard extends React.Component {
   constructor() {
@@ -30,10 +31,10 @@ class DBDashboard extends React.Component {
       dbName: "",
       dbDescription: "",
       dbQuestions: [],
-      limit: 10,
+      limit: 20,
 
       //privateSettings:
-      memberCode: "klkl",
+      memberCode: "",
 
       //For code access,
       memberCodeTry: "",
@@ -478,6 +479,8 @@ class DBDashboard extends React.Component {
                 </div>
               </div>
             )}
+
+            {this.state.tempDenyAccess && <Loading isPopup={true} />}
           </div>
         )}
       </div>

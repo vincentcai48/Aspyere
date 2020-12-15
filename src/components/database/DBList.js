@@ -2,6 +2,7 @@ import React from "react";
 import { Redirect } from "react-router-dom";
 import { pFirestore, pAuth, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
+import Loading from "../Loading";
 
 class DBList extends React.Component {
   constructor() {
@@ -12,6 +13,7 @@ class DBList extends React.Component {
       showCreate: false,
       name: "",
       description: "",
+      isLoading: false,
     };
   }
 
@@ -74,7 +76,10 @@ class DBList extends React.Component {
             onClick={this.selectDB}
             name={db.id}
           >
-            <h2>{db.name}</h2>
+            <h2>
+              <i className="fas fa-database"></i>
+              {db.name}
+            </h2>
             <p>{db.description}</p>
             <p>Created by {db.creator}</p>
           </button>
@@ -90,6 +95,7 @@ class DBList extends React.Component {
   };
 
   createDatabase = () => {
+    this.setState({ isLoading: true });
     var createDB = pFunctions.httpsCallable("createDB");
     createDB({
       name: this.state.name,
@@ -98,20 +104,25 @@ class DBList extends React.Component {
     })
       .then((dbId) => {
         if (dbId) {
-          this.setState({ redirect: "dbdashboard?db=" + dbId });
+          this.setState({
+            redirect: "dbdashboard?db=" + dbId.data,
+            isLoading: false,
+          });
         } else {
           console.log("error");
+          this.setState({ isLoading: false });
         }
       })
       .catch((e) => {
         console.log(e, "error");
+        this.setState({ isLoading: false });
       });
   };
 
   render() {
     if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
-      <div>
+      <div id="dbList-container">
         <h2>All Databases</h2>
         <button
           onClick={() => this.setState({ showCreate: true })}
@@ -155,6 +166,8 @@ class DBList extends React.Component {
             </div>
           </div>
         )}
+
+        {this.state.isLoading && <Loading isPopup={true} />}
       </div>
     );
   }

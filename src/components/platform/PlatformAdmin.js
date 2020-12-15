@@ -1,7 +1,8 @@
 import React from "react";
-import { pFirestore, pFunctions } from "../../services/config";
+import { pFirestore, pFunctions, pStorageRef } from "../../services/config";
 import { PContext } from "../../services/context";
 import Loading from "../Loading";
+import imageCompression from "browser-image-compression";
 
 //PROPS: Object() platformSettings, Object() privateSettings, Object() dbMapping
 class PlatformAdmin extends React.Component {
@@ -212,10 +213,77 @@ class PlatformAdmin extends React.Component {
       .catch({ isError: true });
   };
 
+  uploadBanner = async (e) => {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    this.setState({ isLoading: true });
+
+    const options = {
+      maxSizeMB: 1,
+      useWebWorker: true,
+    };
+    const compressedFile = await imageCompression(file, options);
+    const storageRef = await pStorageRef
+      .child("platforms/" + this.context.platform + "/bannerImage")
+      .put(compressedFile);
+    const url = await storageRef.ref.getDownloadURL();
+    var updatePlatformSettings = pFunctions.httpsCallable(
+      "updatePlatformSettings"
+    );
+    updatePlatformSettings({
+      platformId: this.context.platform,
+      updates: {
+        bannerURL: url,
+      },
+      privateSettingsUpdates: null,
+    })
+      .then((res) => {
+        this.setState({ isLoading: false });
+      })
+      .catch(() => {
+        this.setState({ isLoading: false, isError: true });
+      });
+  };
+
+  uploadIcon = async (e) => {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    this.setState({ isLoading: true });
+
+    const options = {
+      maxSizeMB: 0.06,
+      maxWidthOrHeight: 600,
+      useWebWorker: true,
+    };
+    const compressedFile = await imageCompression(file, options);
+    const storageRef = await pStorageRef
+      .child("platforms/" + this.context.platform + "/iconImage")
+      .put(compressedFile);
+    const url = await storageRef.ref.getDownloadURL();
+    var updatePlatformSettings = pFunctions.httpsCallable(
+      "updatePlatformSettings"
+    );
+    updatePlatformSettings({
+      platformId: this.context.platform,
+      updates: {
+        iconURL: url,
+      },
+      privateSettingsUpdates: null,
+    })
+      .then((res) => {
+        this.setState({ isLoading: false });
+      })
+      .catch(() => {
+        this.setState({ isLoading: false, isError: true });
+      });
+  };
+
   render() {
     console.log(this.state);
     return (
-      <div>
+      <div id="platformAdmin">
         {this.state.settingsChanged.length > 0 && (
           <div id="save-changes-bar">
             <div>Changes have yet to be saved</div>
@@ -260,7 +328,7 @@ class PlatformAdmin extends React.Component {
             {this.props.platformSettings.databases.map((db) => {
               return (
                 <li className="single-db-platformAdmin" key={db}>
-                  <i class="fas fa-database"></i>
+                  <i className="fas fa-database"></i>
                   {this.props.dbMapping[db]}
                   <button onClick={() => this.disconnectDB(db)}>
                     Disconnect
@@ -269,6 +337,53 @@ class PlatformAdmin extends React.Component {
               );
             })}
           </ul>
+
+          <h3>Photos</h3>
+          <div>
+            <div className="single-setting">
+              <div>
+                <h6>Banner Image</h6>
+                <p>Large display over the platform</p>
+              </div>
+              {this.state.bannerURL ? (
+                <img
+                  className="platformAdmin-image-preview"
+                  src={this.state.bannerURL}
+                ></img>
+              ) : (
+                <div className="none-text">None</div>
+              )}
+              <input
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={this.uploadBanner}
+              ></input>
+            </div>
+            <div className="single-setting" style={{ marginTop: "30px" }}>
+              <div>
+                <h6>Icon Image</h6>
+
+                <p>Small display as a platform icon</p>
+              </div>
+
+              <div>
+                {this.state.iconURL ? (
+                  <img
+                    className="platformAdmin-image-preview"
+                    src={this.state.iconURL}
+                  ></img>
+                ) : (
+                  <div className="none-text">None</div>
+                )}
+              </div>
+
+              <input
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={this.uploadIcon}
+              ></input>
+            </div>
+          </div>
           <h3>Settings</h3>
           <div className="toggle-container">
             <input
@@ -426,19 +541,11 @@ class PlatformAdmin extends React.Component {
         )}
 
         {!this.state.showAddGroupOption && this.state.isLoading && (
-          <div className="grayed-out-background">
-            <div className="popup nsp">
-              <div className="loading">Loading ...</div>
-            </div>
-          </div>
+          <Loading isPopup={true} />
         )}
 
         {!this.state.showAddGroupOption && this.state.isLoading && (
-          <div className="grayed-out-background">
-            <div className="popup nsp">
-              <div className="loading">Loading ...</div>
-            </div>
-          </div>
+          <Loading isPopup={true} />
         )}
 
         {!this.state.showAddGroupOption &&
@@ -481,7 +588,11 @@ class PlatformAdmin extends React.Component {
               ></input>
               <br></br>
               {this.state.isError && <div>An Error Occurred.</div>}
-              {this.state.isLoading && <div>Loading...</div>}
+              {this.state.isLoading && (
+                <div>
+                  <Loading />
+                </div>
+              )}
               <button className="submit-button" onClick={this.addGroupOption}>
                 Create
               </button>

@@ -10,6 +10,7 @@ import ProgressBar from "../ProgressBar";
 import { uuid } from "uuidv4";
 import Auth from "../Auth";
 import { Link } from "react-router-dom";
+import Loading from "../Loading";
 
 //PROPS: parentState: Object() (the state of DBDashboard), changeParentState Function(Object() of updates) (this is setState() for DBDashboard)
 class DBAdmin extends React.Component {
@@ -179,28 +180,36 @@ class DBAdmin extends React.Component {
 
   //this will delete the user from all access privileges.
   deleteUser = (userId, isFinal) => {
-    this.setState({ userToDelete: userId });
+    this.setState({ userToDelete: userId, isLoading: isFinal });
     if (isFinal) {
       var deleteDBUser = pFunctions.httpsCallable("deleteDBUser");
       deleteDBUser({
         dbId: this.props.parentState.dbId,
         userId: userId,
-      }).then(() => {
-        this.setState({ userToDelete: null });
-      });
+      })
+        .then(() => {
+          this.setState({ userToDelete: null, isLoading: false });
+        })
+        .catch((e) => {
+          this.setState({ isLoading: false });
+        });
     }
   };
 
   promoteToAdmin = (userId, isFinal) => {
-    this.setState({ userToPromote: userId });
+    this.setState({ userToPromote: userId, isLoading: isFinal });
     if (isFinal) {
       var promoteDBUser = pFunctions.httpsCallable("promoteDBUser");
       promoteDBUser({
         dbId: this.props.parentState.dbId,
         userId: userId,
-      }).then(() => {
-        this.setState({ userToPromote: null });
-      });
+      })
+        .then(() => {
+          this.setState({ userToPromote: null, isLoading: true });
+        })
+        .catch((e) => {
+          this.setState({ isLoading: false });
+        });
     }
   };
 
@@ -217,9 +226,11 @@ class DBAdmin extends React.Component {
                   <div>An Error Occurred </div>
                 ) : (
                   <div>
-                    {this.state.isLoading
-                      ? "Loading..."
-                      : "Changes have yet to be saved"}
+                    {this.state.isLoading ? (
+                      <Loading />
+                    ) : (
+                      "Changes have yet to be saved"
+                    )}
                   </div>
                 )}
 
@@ -235,7 +246,9 @@ class DBAdmin extends React.Component {
               <div className="heading-note">An Error Occurred</div>
             )}
             {this.state.isLoading && !this.state.isNotSaved && (
-              <div className="heading-note">Loading ...</div>
+              <div className="heading-note">
+                <Loading />
+              </div>
             )}
 
             <ul id="db-admin-settings">
@@ -335,14 +348,14 @@ class DBAdmin extends React.Component {
 
         {this.state.userToDelete && (
           <div className="grayed-out-background">
-            <div className="popup">
+            <div className="popup nsp">
               <div>
                 Are You sure you want to delete this user from this database?
                 This will remove this user from all access privileges, viewing
                 (if not public), editing and admin.
               </div>
               <button
-                className="confirm-button"
+                className="submit-button"
                 onClick={() => this.deleteUser(this.state.userToDelete, true)}
               >
                 Confirm

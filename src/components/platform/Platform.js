@@ -38,6 +38,18 @@ class Platform extends React.Component {
       recentActivity: [],
       lastViewed: new Date(),
       unsubscribe: () => {},
+
+      //for the EventsList:
+      isPast: false,
+      allEvents: [], //current/upcoming events, add by pagination
+      pastEvents: [], //add to this by pagination,
+      lastDocAllEvents: -1, //-1 to start from beginning, null to stop pagination. (-1 doesn't represent an index or anything, just there as a placeholder to know when to start)
+      lastDocPastEvents: -1, //these both are document refs.
+      limit: 3, //how much to at a time. Manually set this.
+
+      //for completed events (in MyStats):
+      completedEvents: [],
+      lastDocCompletedEvents: -1,
     };
   }
 
@@ -64,7 +76,8 @@ class Platform extends React.Component {
           //first time, get this data just once. Snapshot listener updates when platform settings change. You don't want to do all this everytime the platform admin settings update.
           if (isFirstTime) {
             //isJoined will then getGroupData, which will then getLastViewed.
-            this.isJoined(doc.data().requireGroup);
+            await this.isJoined(doc.data().requireGroup);
+
             if (isAdmin) this.getPrivateSettings();
             isFirstTime = false;
             //HERE YOU SET THE SECOND STAGE TO FALSE
@@ -150,6 +163,7 @@ class Platform extends React.Component {
     this.state.unsubscribe();
   }
 
+  //where you update the group users by using the last "true" parameter in getGroupAdminData
   getLastViewed = async (groupId) => {
     // var doc = await pFirestore
     //   .collection("platforms")
@@ -165,7 +179,7 @@ class Platform extends React.Component {
     this.setState({
       lastViewed: lastViewed,
     });
-    await this.getGroupAdminData(lastViewed, new Date());
+    await this.getGroupAdminData(lastViewed, new Date(), true);
     var updateUserViewTime = pFunctions.httpsCallable("updateUserViewTime");
     updateUserViewTime({
       platformId: this.context.platform,
@@ -192,11 +206,11 @@ class Platform extends React.Component {
   };
 
   //pass in a date object to get all records after that. Call everytime you want to add 7 days. (or however many days)
-  getGroupAdminData = async (startDate, endDate) => {
+  getGroupAdminData = async (startDate, endDate, isRefreshUsers) => {
     var start = fbTimestamp.fromDate(startDate);
     var end = fbTimestamp.fromDate(endDate);
     var users;
-    if (this.state.allGroupUsers.length == 0) {
+    if (this.state.allGroupUsers.length == 0 || isRefreshUsers) {
       users = await this.getAllGroupUsers();
     } else {
       users = [...this.state.allGroupUsers];
@@ -335,6 +349,136 @@ class Platform extends React.Component {
     //   });
   };
 
+  //gets all current events
+  //call this first time AND also EVERY pagination.
+  getAllEvents = async (isRefresh) => {
+    var nowTime = fbTimestamp.fromDate(new Date());
+    //first get the current events
+    var allEvents;
+    var query = pFirestore
+      .collection("platforms")
+      .doc(this.context.platform)
+      .collection("events")
+      .where("endTime", ">=", nowTime)
+      .orderBy("endTime", "asc");
+    if (!this.state.lastDocAllEvents) return;
+    if (this.state.lastDocAllEvents === -1 || isRefresh) {
+      allEvents = await query.limit(this.state.limit).get();
+    } else {
+      allEvents = await query
+        .startAfter(this.state.lastDocAllEvents)
+        .limit(this.state.limit)
+        .get();
+    }
+    this.setState((prevState) => {
+      var arr = isRefresh ? [] : [...prevState.allEvents];
+      allEvents.docs.forEach((e) => {
+        var newData = { ...e.data() };
+        newData.startTime = newData.startTime.toDate();
+        newData.endTime = newData.endTime.toDate();
+        arr.push({ ...newData, id: e.id });
+      });
+      return {
+        allEvents: arr,
+        lastDocAllEvents: allEvents.docs[allEvents.docs.length - 1],
+      };
+    });
+  };
+
+  getPastEvents = async (isRefresh) => {
+    console.log("Past Events!!");
+    var nowTime = fbTimestamp.fromDate(new Date());
+    //first get the current events
+    var allEvents;
+    var query = pFirestore
+      .collection("platforms")
+      .doc(this.context.platform)
+      .collection("events")
+      .where("endTime", "<", nowTime)
+      .orderBy("endTime", "desc");
+    if (!this.state.lastDocPastEvents) return;
+    if (this.state.lastDocPastEvents === -1 || isRefresh) {
+      allEvents = await query.limit(this.state.limit).get();
+    } else {
+      allEvents = await query
+        .startAfter(this.state.lastDocPastEvents)
+        .limit(this.state.limit)
+        .get();
+    }
+    this.setState((prevState) => {
+      var arr = isRefresh ? [] : [...prevState.pastEvents];
+      allEvents.docs.forEach((e) => {
+        var newData = { ...e.data() };
+        console.log(e.data());
+        newData.startTime = newData.startTime.toDate();
+        newData.endTime = newData.endTime.toDate();
+        arr.push({ ...newData, id: e.id });
+      });
+      return {
+        pastEvents: arr,
+        lastDocPastEvents: allEvents.docs[allEvents.docs.length - 1],
+      };
+    });
+  };
+
+  //get from the actual user records of events (including what they got right or wrong), NOT from the platform level "events" collection.
+  getCompletedEvents = async (isRefresh) => {
+    var groupId = this.state.groupData.id || "individual";
+    console.log(isRefresh, this.state.lastDocCompletedEvents);
+
+    var query = pFirestore
+      .collection("platforms")
+      .doc(this.context.platform)
+      .collection("users")
+      .doc(pAuth.currentUser.uid)
+      .collection(groupId)
+      .orderBy("timeSubmitted", "desc");
+    var eventsList;
+    if (!this.state.lastDocCompletedEvents) {
+      console.log("NO MORE DOCS");
+      return;
+    }
+    if (this.state.lastDocCompletedEvents === -1 || isRefresh) {
+      eventsList = await query.limit(this.state.limit).get();
+    } else {
+      console.log("PAGINATION!!");
+      eventsList = await query
+        .startAfter(this.state.lastDocCompletedEvents)
+        .limit(this.state.limit)
+        .get();
+    }
+    this.setState((prevState) => {
+      var arr = isRefresh ? [] : [...prevState.completedEvents];
+      console.log(eventsList.docs);
+      eventsList.docs.forEach((e) => {
+        var newObj = { ...e.data() };
+        newObj.timeSubmitted = e.data().timeSubmitted.toDate();
+        arr.push({ ...newObj, id: e.id });
+      });
+      console.log(arr, eventsList.docs[eventsList.docs.length - 1]);
+      return {
+        completedEvents: [...arr],
+        lastDocCompletedEvents: eventsList.docs[eventsList.docs.length - 1],
+      };
+    });
+  };
+
+  //actually just refreshing current events
+  refreshAllEvents = async () => {
+    this.setState({ lastDocAllEvents: -1 });
+    await this.getAllEvents(true);
+  };
+
+  refreshPastEvents = async () => {
+    this.setState({ lastDocPastEvents: -1 });
+    await this.getPastEvents(true);
+  };
+
+  refreshCompletedEvents = async () => {
+    this.setState({ lastDocCompletedEvents: -1 });
+    await this.getCompletedEvents(true);
+  };
+
   unjoin = () => {
     this.setState({ isUnjoinLoading: true });
     var unjoinGroup = pFunctions.httpsCallable("unjoinGroup");
@@ -353,10 +497,11 @@ class Platform extends React.Component {
   };
 
   render() {
+    console.log(this.state.pastEvents);
     if (this.state.isLoadingPlatform)
       return (
         <div>
-          <Loading />
+          <Loading isFullCenter={true} />
         </div>
       );
     var accessLevel = 0;
@@ -385,6 +530,7 @@ class Platform extends React.Component {
             setLastViewed={(v) => this.setState({ lastViewed: v })}
             privateGroupSettings={this.state.privateGroupSettings}
             groupName={this.state.platformSettings.groupName}
+            limit={this.state.limit}
           />
         );
         break;
@@ -394,14 +540,23 @@ class Platform extends React.Component {
             isAdmin={this.state.isAdmin}
             dbMapping={this.state.dbMapping}
             userData={this.state.userData}
+            getAllEvents={this.getAllEvents}
+            getPastEvents={this.getPastEvents}
+            allEvents={this.state.allEvents}
+            pastEvents={this.state.pastEvents}
+            refreshAllEvents={this.refreshAllEvents}
+            refreshPastEvents={this.refreshPastEvents}
           />
         );
         break;
-      case 4:
+      case 3:
         mainComponent = (
           <MyStats
             userData={this.state.userData}
             groupName={this.state.platformSettings.groupName}
+            completedEvents={this.state.completedEvents}
+            getCompletedEvents={this.getCompletedEvents}
+            refreshCompletedEvents={this.refreshCompletedEvents}
           />
         );
         break;
@@ -410,6 +565,9 @@ class Platform extends React.Component {
           <MyStats
             userData={this.state.userData}
             groupName={this.state.platformSettings.groupName}
+            completedEvents={this.state.completedEvents}
+            getCompletedEvents={this.getCompletedEvents}
+            refreshCompletedEvents={this.refreshCompletedEvents}
           />
         );
     }
@@ -459,8 +617,17 @@ class Platform extends React.Component {
         )}
 
         {this.state.isJoined ? (
-          <div>
-            <div id="group-header">
+          <div id="joined-platform">
+            <div
+              id="group-header"
+              style={{
+                background: `linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url(${this.state.platformSettings.bannerURL}) no-repeat center`,
+                backgroundSize: "cover",
+              }}
+            >
+              {/* {this.state.platformSettings.bannerURL && (
+                <img src={this.state.platformSettings.bannerURL}></img>
+              )} */}
               <h2 id="group-name">
                 {this.state.groupData.name || "Individual Join"}
               </h2>
@@ -543,6 +710,7 @@ class Platform extends React.Component {
               userData={this.state.userData}
               privateSettings={this.state.privateSettings}
               publicJoin={this.state.platformSettings.publicJoin}
+              platformSettings={this.state.platformSettings}
             />
           </div>
         )}

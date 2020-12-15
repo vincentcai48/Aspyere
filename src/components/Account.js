@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { pAuth } from "../services/config";
+import { PContext } from "../services/context";
 import Auth from "./Auth";
+import personIcon from "../images/person-icon.png";
 
 function Account() {
   const [isAuth, changeIsAuth] = useState(pAuth.currentUser);
+  const context = useContext(PContext);
 
   pAuth.onAuthStateChanged((user) => {
     if (user) {
@@ -24,8 +27,13 @@ function Account() {
   return (
     <div id="account-container">
       <h2>Account</h2>
-      <img src={pAuth.currentUser.photoURL} className="account-img"></img>
-      <div className="account-displayName">{pAuth.currentUser.displayName}</div>
+      <img
+        src={pAuth.currentUser.photoURL || personIcon}
+        className="account-img"
+      ></img>
+      <div className="account-displayName">
+        {context.rootUserData.displayName || pAuth.currentUser.email}
+      </div>
       <button id="logout-button" onClick={logout}>
         Logout
       </button>

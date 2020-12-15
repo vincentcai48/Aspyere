@@ -16,6 +16,7 @@ class PlatformList extends React.Component {
   componentDidMount() {
     pFirestore
       .collection("platforms")
+      .limit(20)
       .get()
       .then((platforms) => {
         var arr = [];
@@ -28,7 +29,11 @@ class PlatformList extends React.Component {
   }
 
   joinPlatform = (id) => {
-    this.context.joinPlatform(id);
+    if (this.context.rootUserData.platform) {
+      this.context.joinPlatform(id);
+    } else {
+      this.context.setPlatform(id);
+    }
   };
 
   changeState = (e) => {
@@ -86,7 +91,17 @@ class PlatformList extends React.Component {
                     Join
                   </button>
                 ) : (
-                  <div>Joined</div>
+                  <button
+                    className="bb"
+                    style={{ display: "block" }}
+                    onClick={() => {
+                      this.context.setPlatform(
+                        this.context.rootUserData.platform
+                      );
+                    }}
+                  >
+                    Joined
+                  </button>
                 )}
               </li>
             );

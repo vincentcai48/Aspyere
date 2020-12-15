@@ -4,7 +4,7 @@ import DatePicker from "react-datepicker";
 import { uuidv4 } from "uuidv4";
 import { fbTimestamp, pFunctions } from "../../services/config";
 
-//PROPS: String eventId (null if adding event, id of event if editing it), Object eventData (the data of the event, null if adding object), Function closeFunction (to x-out of the popup)
+//PROPS: String eventId (null if adding event, id of event if editing it), Object eventData (the data of the event, null if adding object), Function closeFunction (to x-out of the popup), Function() setIsNeedRefresh (to show the refresh popup)
 class EditEvent extends React.Component {
   constructor() {
     super();
@@ -94,6 +94,7 @@ class EditEvent extends React.Component {
     })
       .then(() => {
         this.setState({ isLoading: false });
+        this.props.setIsNeedRefresh(true);
         this.props.closeFunction();
       })
       .catch((e) => {
@@ -238,6 +239,7 @@ class EditEvent extends React.Component {
     })
       .then(() => {
         this.setState({ showDeletePopup: false, isLoading: false });
+        this.props.setIsNeedRefresh(true);
         this.props.closeFunction();
       })
       .catch((e) => {

@@ -51,7 +51,7 @@ class Home extends React.Component {
       this.getPlatforms();
     }
     return (
-      <div>
+      <div id="home-container">
         {this.context.userId ? (
           <div>
             {this.context.platform ? (
@@ -81,7 +81,7 @@ class Home extends React.Component {
                         return (
                           <li className="single-myPlatform">
                             <div>
-                              {this.context.platform == p ? (
+                              {this.context.rootUserData.platform == p ? (
                                 <div className="joined-text">Joined</div>
                               ) : (
                                 <button
@@ -107,7 +107,12 @@ class Home extends React.Component {
                                 return (
                                   <div className="platform-nd">
                                     <h5>{pData.name}</h5>
-                                    <p>{pData.description}</p>
+                                    <p>
+                                      {pData.description.length > 100
+                                        ? pData.description.substr(0, 100) +
+                                          "..."
+                                        : pData.description}
+                                    </p>
                                   </div>
                                 );
                               }
@@ -117,7 +122,7 @@ class Home extends React.Component {
                       })}
                   </ul>
                   <button
-                    className="sb"
+                    className="sb enp"
                     onClick={() => {
                       this.context.setPlatform(null);
                       this.context.setIsShowPlatformPopup(false);

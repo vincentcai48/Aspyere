@@ -35,6 +35,13 @@ class DBQuestions extends React.Component {
       questionEditing: null, //the question id, if null, then you're adding a question.
       questionToDelete: null,
       showLimitPopup: false,
+      //the all questions query popup
+      showAllQuestionsPopup: false,
+      sortField: null,
+      inputSortField: "lastUpdated",
+      isAsc: false,
+      lastDocAllQuestions: -1,
+      queryQuestions: [],
     };
   }
 
@@ -234,6 +241,34 @@ class DBQuestions extends React.Component {
       questionEditing: null,
     });
   };
+  //call this once, when you submit the query
+  getQueryQuestions = () => {
+    this.setState({ sortField: this.state.inputSortField });
+    this.getNextQuestions();
+  };
+
+  getNextQuestions = async (isRefresh) => {
+    var sortField = this.state.sortField || this.state.inputSortField;
+    var query = pFirestore
+      .collection("databases")
+      .doc(this.props.parentState.dbId)
+      .collection("questions")
+      .orderBy(sortField, this.state.isAsc ? "asc" : "desc");
+    if (!this.state.lastDocAllQuestions) return;
+    if (this.state.lastDocAllQuestions === -1 || isRefresh) {
+      query = query.limit(Math.round(this.props.parentState.limit / 2));
+    } else {
+      query = query
+        .startAfter(this.state.lastDocAllQuestions)
+        .limit(Math.round(this.props.parentState.limit / 2));
+    }
+    var questions = await query.get();
+    var arr = isRefresh ? [] : [...this.state.queryQuestions];
+    questions.docs.forEach((q) => {
+      arr.push({ ...q.data(), id: q.id });
+    });
+    this.setState({ queryQuestions: arr });
+  };
 
   render() {
     if (!pAuth.currentUser) return <Auth />;
@@ -242,6 +277,18 @@ class DBQuestions extends React.Component {
         {/* <div id="first-row">
           <div id="limit">Limit: {this.props.parentState.limit}</div>
         </div> */}
+        <div id="first-row">
+          <div className="groupAdmin-header">
+            <h3>Recent Questions Workspace</h3>
+            <p>Live updates to 20 most recent questions</p>
+          </div>
+          <button
+            className="query-questions-button"
+            onClick={() => this.setState({ showAllQuestionsPopup: true })}
+          >
+            Query All Questions
+          </button>
+        </div>
         {this.props.parentState.accessLevel >= 2 && (
           <button
             onClick={() => this.setState({ isAddPopup: true })}
@@ -305,7 +352,7 @@ class DBQuestions extends React.Component {
 
         {/***POPUP FOR ADDING/EDITING A QUESTION*/}
         {this.state.isAddPopup && (
-          <div className="grayed-out-background">
+          <div className="grayed-out-background add-q-gob">
             {this.props.parentState.accessLevel > 1 ? (
               <div id="add-to-database" className="popup">
                 <h5>
@@ -465,7 +512,7 @@ class DBQuestions extends React.Component {
                 )}
               </div>
             ) : (
-              <div className="popup">
+              <div className="popup nsp">
                 <h3>No Editing Access</h3>
                 <button
                   onClick={() => {
@@ -521,6 +568,124 @@ class DBQuestions extends React.Component {
               >
                 Update
               </button>
+            </div>
+          </div>
+        )}
+
+        {this.state.showAllQuestionsPopup && (
+          <div className="grayed-out-background">
+            <div className="popup allQs">
+              <button
+                onClick={() => this.setState({ showAllQuestionsPopup: false })}
+                className="cancel-button"
+              >
+                Close
+              </button>
+              {this.state.sortField ? (
+                <div id="query-container">
+                  <div className="query-header">
+                    <h3>
+                      Query:{" "}
+                      {this.state.sortField == "lastUpdated"
+                        ? "Last Updated"
+                        : "Difficulty"}{" "}
+                      -{this.state.isAsc ? "Ascending" : "Descending"}
+                    </h3>
+                    <button
+                      className="sb"
+                      onClick={() =>
+                        this.setState({ sortField: null, queryQuestions: [] })
+                      }
+                    >
+                      New Query
+                    </button>
+                  </div>
+
+                  <ul id="ul-dbqueryquestions">
+                    {this.state.queryQuestions.map((q) => {
+                      console.log(q);
+                      return (
+                        <li className="single-question" key={"query" + q.id}>
+                          <hr></hr>
+                          <div className="id-q">ID: {q.id}</div>
+                          <div className="first-line-q">
+                            <h6>{this.renderWithLinebreaks(q.text)}</h6>
+                            <div>
+                              <button
+                                className="edit-button"
+                                onClick={() => this.prepareEdit(q)}
+                              >
+                                Edit <i class="fas fa-edit"></i>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="difficulty-q">
+                            Difficulty: {q.difficulty}
+                          </div>
+                          <ul className="images-q">
+                            {q.imageURLs &&
+                              q.imageURLs.map((img) => {
+                                return (
+                                  <li>
+                                    <img src={img}></img>
+                                  </li>
+                                );
+                              })}
+                          </ul>
+                          <ul className="tags-q">
+                            {q.tags &&
+                              q.tags.map((tag) => {
+                                return <li>{tag}</li>;
+                              })}
+                          </ul>
+                          <div className="answers-q">
+                            Answer{q.answers && q.answers.length != 1 && "s"}:{" "}
+                            {q.answers &&
+                              q.answers.toString().replaceAll(",", ", ")}
+                          </div>
+                          <p>
+                            Last Edit was at{" "}
+                            {q.lastUpdated && q.lastUpdated.toDate().toString()}{" "}
+                            by {q.lastEditor}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <button
+                    className="more-events"
+                    onClick={this.getNextQuestions}
+                    style={{ margin: "5vh 0px" }}
+                  >
+                    <i className="fas fa-plus-circle"></i>
+                    <span>Load More Questions</span>
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <h4>Select How to Sort By</h4>
+                  <select
+                    value={this.state.inputSortField}
+                    onChange={this.changeState}
+                    name="inputSortField"
+                  >
+                    <option value="lastUpdated">Last Updated</option>
+
+                    <option value="difficulty">Difficulty</option>
+                  </select>
+                  <select
+                    value={this.state.isAsc}
+                    onChange={this.changeState}
+                    name="isAsc"
+                  >
+                    <option value={true}>Ascending</option>
+                    <option value={false}>Descending</option>
+                  </select>
+                  <button className="sb" onClick={this.getQueryQuestions}>
+                    Get Questions
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

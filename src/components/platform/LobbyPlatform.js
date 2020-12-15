@@ -2,8 +2,9 @@ import React from "react";
 import { pAuth, pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
 import Loading from "../Loading";
+import personIcon from "../../images/person-icon.png";
 
-//PROPS: Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), String groupName (what to call a "group". Eg: a "class"), Boolean requireGroup, Boolean publicCreateGroup, Boolean groupOptionsOn, Array[] groupOptions, Function() checkJoinedStatus (to use when you join), Function() setMenuOption, Object() privateSettings, Boolean publicJoin
+//PROPS: Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), String groupName (what to call a "group". Eg: a "class"), Boolean requireGroup, Boolean publicCreateGroup, Boolean groupOptionsOn, Array[] groupOptions, Function() checkJoinedStatus (to use when you join), Function() setMenuOption, Object() privateSettings, Boolean publicJoin, Object() platformSettings.
 class LobbyPlatform extends React.Component {
   constructor() {
     super();
@@ -148,7 +149,30 @@ class LobbyPlatform extends React.Component {
 
     return (
       <div>
-        <div>
+        <section
+          className="lobbyPlatform-header"
+          style={{
+            background: `linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url(${this.props.platformSettings.bannerURL}) no-repeat center`,
+            backgroundSize: "cover",
+          }}
+        >
+          <span>
+            <button onClick={() => this.context.setPlatform(null)}>
+              All Platforms
+            </button>
+            <i class="fas fa-chevron-right"></i>
+            <i class="fas fa-home"></i>Platform Homepage
+          </span>
+          <h2 id="lobbyHeader-name">{this.props.platformSettings.name}</h2>
+        </section>
+        <div id="lobbyPlatform-main">
+          <div id="platform-info">
+            <img
+              className="icon-image"
+              src={this.props.platformSettings.iconURL}
+            ></img>
+            <p>{this.props.platformSettings.description}</p>
+          </div>
           <div id="first-row-lobby">
             <h2>Join a {this.props.groupName}</h2>
             {!this.props.requireGroup && (
@@ -209,6 +233,29 @@ class LobbyPlatform extends React.Component {
                 <ul id="joined-groups">
                   {this.props.userData.joinedGroups &&
                     this.props.userData.joinedGroups.map((groupId) => {
+                      if (
+                        groupId === "individual" &&
+                        !this.props.platformSettings.requireGroup
+                      )
+                        return (
+                          <li
+                            key="individual"
+                            className="single-group individual"
+                          >
+                            <h3>Individual Join</h3>
+                            <p>
+                              Join platform without a {this.props.groupName}
+                            </p>
+                            <button
+                              onClick={() => {
+                                this.joinGroupProxy("individual", true);
+                              }}
+                              className="join-button"
+                            >
+                              Join Individually
+                            </button>
+                          </li>
+                        );
                       var g = this.state.groupsList.filter(
                         (e) => e.id == groupId
                       );
@@ -219,8 +266,11 @@ class LobbyPlatform extends React.Component {
                           <h3>{g.name}</h3>
                           <p>{g.description}</p>
                           <ul>
-                            {g.admins.map((admin) => (
-                              <li>{this.context.usersMapping[admin]}</li>
+                            {g.admins.slice(0, 3).map((admin) => (
+                              <li className="single-admin">
+                                <img className="person-icon" src={personIcon} />
+                                {this.context.usersMapping[admin]}
+                              </li>
                             ))}
                           </ul>
                           <button
@@ -253,33 +303,38 @@ class LobbyPlatform extends React.Component {
           )}
 
           <ul id="groups-list">
-            {this.state.groupsList.map((g) => {
-              if (
-                this.props.userData &&
-                this.props.userData.joinedGroups &&
-                this.props.userData.joinedGroups.includes(g.id)
-              )
-                return;
-              return (
-                <li key={g.id} className="single-group">
-                  <h3>{g.name}</h3>
-                  <p>{g.description}</p>
-                  <ul>
-                    {g.admins.map((admin) => (
-                      <li>{this.context.usersMapping[admin]}</li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => {
-                      this.joinGroupProxy(g.id, g.isPublic);
-                    }}
-                    className="join-button"
-                  >
-                    Join
-                  </button>
-                </li>
-              );
-            })}
+            {this.state.groupsList
+              .sort((a, b) => a.difficulty - b.difficulty)
+              .map((g) => {
+                if (
+                  this.props.userData &&
+                  this.props.userData.joinedGroups &&
+                  this.props.userData.joinedGroups.includes(g.id)
+                )
+                  return;
+                return (
+                  <li key={g.id} className="single-group">
+                    <h3>{g.name}</h3>
+                    <p>{g.description}</p>
+                    <ul>
+                      {g.admins.slice(0, 3).map((admin) => (
+                        <li className="single-admin">
+                          <img className="person-icon" src={personIcon} />
+                          {this.context.usersMapping[admin]}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => {
+                        this.joinGroupProxy(g.id, g.isPublic);
+                      }}
+                      className="join-button"
+                    >
+                      Join
+                    </button>
+                  </li>
+                );
+              })}
           </ul>
 
           {this.state.showCreateGroupPopup && (

@@ -103,7 +103,7 @@ class LiveQuestions extends React.Component {
       })
       .catch((e) => {
         console.log("ERROR", e);
-        this.setState({ isLoading: false, errorType: -1 });
+        this.setState({ isLoading: false, errorType: -1, isError: true });
       });
   };
 
@@ -186,12 +186,20 @@ class LiveQuestions extends React.Component {
           this.getLiveQuestions(this.state.platformId, this.state.eventId);
         }
       })
-      .catch((e) => console.log(e));
+      .catch((e) => {
+        console.log(e);
+        this.setState({
+          showSubmitPopup: false,
+          isSubmitError: true,
+          sumbitErrorType: -1,
+          isSubmitLoading: false,
+        });
+      });
   };
 
   render() {
     var num = 0;
-    console.log(this.state.answers);
+    console.log(this.state.errorType);
     if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
       <div>

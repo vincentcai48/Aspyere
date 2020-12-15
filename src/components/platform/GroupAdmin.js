@@ -10,7 +10,7 @@ import Loading from "../Loading";
 import personIcon from "../../images/person-icon.png";
 import MyStats from "./MyStats";
 
-//PROPS: Object() groupData, Function() getGroupAdminData, Array[] recentActivity, Array[] allUsers, Date() lastViewed, Object() privateGroupSettings, String groupName
+//PROPS: Object() groupData, Function() getGroupAdminData, Array[] recentActivity, Array[] allUsers, Date() lastViewed, Object() privateGroupSettings, String groupName, Number limit
 class GroupAdmin extends React.Component {
   constructor() {
     super();
@@ -38,6 +38,11 @@ class GroupAdmin extends React.Component {
       statsUserName: "",
       showDeleteGroupPopup: false,
       confirmText: "",
+
+      //for viewing a member's completed events and feedback.
+      completedEvents: [],
+      lastDocCompletedEvents: -1,
+      userId: null,
     };
   }
 
@@ -146,13 +151,17 @@ class GroupAdmin extends React.Component {
       var startDate = new Date(
         this.props.lastViewed.getTime() - days * 24 * 60 * 60 * 1000
       );
-      await this.props.getGroupAdminData(startDate, this.props.lastViewed);
+      await this.props.getGroupAdminData(
+        startDate,
+        this.props.lastViewed,
+        true
+      );
       this.props.setLastViewed(startDate);
     } else {
       var startDate = new Date(
         new Date().getTime() - days * 24 * 60 * 60 * 1000
       );
-      await this.props.getGroupAdminData(startDate, new Date());
+      await this.props.getGroupAdminData(startDate, new Date(), false);
       this.props.setLastViewed(startDate);
     }
   };
@@ -188,7 +197,7 @@ class GroupAdmin extends React.Component {
         if (res.data.isError) {
           this.setState({ isError: true, isLoading: false });
         } else {
-          this.setState({ isLoading: false });
+          this.setState({ isLoading: false, changesToSave: false });
         }
       })
       .catch((e) => {
@@ -243,7 +252,12 @@ class GroupAdmin extends React.Component {
   };
 
   openStatsPage = async (userId) => {
-    this.setState({ isLoading: true });
+    this.setState({
+      isLoading: true,
+      userId: userId,
+      lastDocCompletedEvents: -1,
+      completedEvents: [],
+    });
     var userData = {};
     if (this.state.storedUserGroupData[userId])
       userData = this.state.storedUserGroupData[userId];
@@ -292,8 +306,48 @@ class GroupAdmin extends React.Component {
       });
   };
 
+  generateUserCompletedEvents = async (userId, isRefresh) => {
+    if (!userId) return;
+    var groupId = this.props.groupData.id || "individual";
+    var query = pFirestore
+      .collection("platforms")
+      .doc(this.context.platform)
+      .collection("users")
+      .doc(userId)
+      .collection(groupId)
+      .orderBy("timeSubmitted", "desc");
+    console.log(isRefresh, this.state.lastDocCompletedEvents);
+    var eventsList;
+    if (!this.state.lastDocCompletedEvents) {
+      console.log("NO MORE DOCS");
+      return;
+    }
+    if (this.state.lastDocCompletedEvents === -1 || isRefresh) {
+      eventsList = await query.limit(this.props.limit).get();
+    } else {
+      console.log("PAGINATION!!");
+      eventsList = await query
+        .startAfter(this.state.lastDocCompletedEvents)
+        .limit(this.props.limit)
+        .get();
+    }
+    this.setState((prevState) => {
+      var arr = isRefresh ? [] : [...prevState.completedEvents];
+      console.log(eventsList.docs);
+      eventsList.docs.forEach((e) => {
+        var newObj = { ...e.data() };
+        newObj.timeSubmitted = e.data().timeSubmitted.toDate();
+        arr.push({ ...newObj, id: e.id });
+      });
+      console.log(arr, eventsList.docs[eventsList.docs.length - 1]);
+      return {
+        completedEvents: [...arr],
+        lastDocCompletedEvents: eventsList.docs[eventsList.docs.length - 1],
+      };
+    });
+  };
+
   render() {
-    console.log(this.props.recentActivity);
     return (
       <div id="groupAdmin-container">
         <section id="recent-activity">
@@ -331,6 +385,63 @@ class GroupAdmin extends React.Component {
                 <span>7 Days</span>
               </button>
             </li>
+          </ul>
+        </section>
+        <hr></hr>
+        <section>
+          <div className="groupAdmin-header">
+            <h3>Members</h3>
+            <p>All users that are currently in this group</p>
+          </div>
+          <ul id="groupUsers-list">
+            {this.props.allUsers &&
+              this.props.allUsers
+                .sort((a, b) => {
+                  if (!this.props.groupData || !this.props.groupData.admins) {
+                    return -1;
+                  }
+
+                  if (this.props.groupData.admins.includes(a.id)) return -1;
+                  if (this.props.groupData.admins.includes(b.id)) return 1;
+                  return 1;
+                })
+                .map((user) => {
+                  return (
+                    <li>
+                      <div className="li-main">
+                        <div className="member-name">
+                          <img className="person-icon" src={personIcon} />
+                          {this.context.usersMapping[user.id]}
+                        </div>
+                        <div>
+                          {this.props.groupData &&
+                          this.props.groupData.admins &&
+                          this.props.groupData.admins.includes(user.id) ? (
+                            <span className="admin-label">Admin</span>
+                          ) : (
+                            <button
+                              className="promote-admin"
+                              onClick={() =>
+                                this.setState({ userToPromote: user.id })
+                              }
+                            >
+                              Promote to Admin
+                            </button>
+                          )}
+                        </div>
+                        <div>
+                          <button
+                            className="sb"
+                            onClick={() => this.openStatsPage(user.id)}
+                          >
+                            View Stats Page
+                          </button>
+                        </div>
+                      </div>
+                      <hr></hr>
+                    </li>
+                  );
+                })}
           </ul>
         </section>
         <hr></hr>
@@ -424,61 +535,6 @@ class GroupAdmin extends React.Component {
               </button>
             </div>
           </div>
-        </section>
-        <hr></hr>
-        <section>
-          <div className="groupAdmin-header">
-            <h3>Members</h3>
-            <p>All users that are currently in this group</p>
-          </div>
-          <ul id="groupUsers-list">
-            {this.props.allUsers &&
-              this.props.allUsers
-                .sort((a, b) => {
-                  if (!this.props.groupData || !this.props.groupData.admins) {
-                    return -1;
-                  }
-
-                  if (this.props.groupData.admins.includes(a.id)) return -1;
-                  if (this.props.groupData.admins.includes(b.id)) return 1;
-                  return 1;
-                })
-                .map((user) => {
-                  return (
-                    <li>
-                      <div className="li-main">
-                        <img className="person-icon" src={personIcon} />
-                        <div>{this.context.usersMapping[user.id]}</div>
-                        <div>
-                          {this.props.groupData &&
-                          this.props.groupData.admins &&
-                          this.props.groupData.admins.includes(user.id) ? (
-                            <span className="admin-label">Admin</span>
-                          ) : (
-                            <button
-                              className="promote-admin"
-                              onClick={() =>
-                                this.setState({ userToPromote: user.id })
-                              }
-                            >
-                              Promote to Admin
-                            </button>
-                          )}
-                        </div>
-                        <div>
-                          <button
-                            className="sb"
-                            onClick={() => this.openStatsPage(user.id)}
-                          >
-                            View Stats Page
-                          </button>
-                        </div>
-                      </div>
-                      <hr></hr>
-                    </li>
-                  );
-                })}
-          </ul>
         </section>
 
         {this.state.isLoading && (
@@ -590,6 +646,13 @@ class GroupAdmin extends React.Component {
                 userData={this.state.statsPageData}
                 groupName={this.props.groupName}
                 userName={this.state.statsUserName}
+                getCompletedEvents={() =>
+                  this.generateUserCompletedEvents(this.state.userId, false)
+                }
+                completedEvents={this.state.completedEvents}
+                refreshCompletedEvents={() =>
+                  this.generateUserCompletedEvents(this.state.userId, true)
+                }
               />
               <button
                 className="cancel-button"
