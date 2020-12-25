@@ -157,7 +157,7 @@ class DBQuestions extends React.Component {
       .collection("questions")
       .add({
         difficulty: Number(this.state.difficultyInput),
-        text: this.state.questionText,
+        text: this.state.questionText.replaceAll("\n", "[&&linebreak]"),
         answers: this.state.answers,
         imageURLs: this.state.imageURLs,
         tags: this.state.tags,
@@ -267,7 +267,10 @@ class DBQuestions extends React.Component {
     questions.docs.forEach((q) => {
       arr.push({ ...q.data(), id: q.id });
     });
-    this.setState({ queryQuestions: arr });
+    this.setState({
+      queryQuestions: arr,
+      lastDocAllQuestions: questions.docs[questions.docs.length - 1],
+    });
   };
 
   render() {
@@ -527,8 +530,8 @@ class DBQuestions extends React.Component {
         )}
 
         {this.state.questionToDelete && (
-          <div className="grayed-out-background">
-            <div className="popup">
+          <div className="grayed-out-background question-delete">
+            <div className="popup nsp">
               <h3>
                 Are you sure you want to delete this question? This action
                 cannot be undone.

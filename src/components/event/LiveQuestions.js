@@ -1,5 +1,5 @@
 import React from "react";
-import { pFunctions } from "../../services/config";
+import { pFirestore, pFunctions } from "../../services/config";
 import ReactHtmlParser, {
   processNodes,
   convertNodeToElement,
@@ -31,6 +31,8 @@ class LiveQuestions extends React.Component {
       showSubmitPopup: false,
       endTime: null,
       countDown: 0,
+      instructionsText: "",
+      showInstructions: false,
     };
   }
 
@@ -49,6 +51,14 @@ class LiveQuestions extends React.Component {
     });
     this.getLiveQuestions(platform, eventId);
     this.countDown();
+
+    pFirestore
+      .collection("platforms")
+      .doc(platform)
+      .get()
+      .then((doc) => {
+        this.setState({ instructionsText: doc.data().instructionsText });
+      });
   }
 
   countDown = () => {
@@ -208,6 +218,33 @@ class LiveQuestions extends React.Component {
             <div className="loading-container">Loading your Questions ...</div>
           ) : (
             <div>
+              {!this.state.isFeedback && !this.state.isError && (
+                <div className="instructions-text">
+                  <div className="it-head">
+                    <i className="fas fa-info-circle"></i>
+                    <div>
+                      <h4>Instructions</h4>
+                      <p>
+                        Make sure to read the instructions before submitting
+                        answers
+                      </p>
+                    </div>
+
+                    <button
+                      className="fab fa-readme"
+                      onClick={() =>
+                        this.setState((p) => {
+                          return { showInstructions: !p.showInstructions };
+                        })
+                      }
+                    ></button>
+                  </div>
+
+                  {this.state.showInstructions && (
+                    <p className="it-text">{this.state.instructionsText}</p>
+                  )}
+                </div>
+              )}
               {this.state.isError ? (
                 <div className="error-container">
                   {this.getErrorText(this.state.errorType)}
@@ -238,13 +275,21 @@ class LiveQuestions extends React.Component {
                         )}
                         <div>
                           <h5>
-                            {Math.floor((this.state.countDown % 3600) / 60)}
+                            {Math.floor((this.state.countDown % 3600) / 60) >=
+                            10
+                              ? Math.floor((this.state.countDown % 3600) / 60)
+                              : "0" +
+                                Math.floor((this.state.countDown % 3600) / 60)}
                           </h5>
                           <span>Mins</span>
                         </div>
                         <div>
                           <h5>
-                            {Math.floor((this.state.countDown % 3600) % 60)}
+                            {Math.floor((this.state.countDown % 3600) % 60) >=
+                            10
+                              ? Math.floor((this.state.countDown % 3600) % 60)
+                              : "0" +
+                                Math.floor((this.state.countDown % 3600) % 60)}
                           </h5>
                           <span>Secs</span>
                         </div>
@@ -358,6 +403,12 @@ class LiveQuestions extends React.Component {
                       >
                         Submit Answers
                       </button>
+                    )}
+                    {!this.state.isFeedback && (
+                      <p>
+                        Please Note that it may take up to 20 seconds for
+                        answers to submit.
+                      </p>
                     )}
                   </div>
                 </div>

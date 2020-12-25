@@ -78,6 +78,13 @@ class Home extends React.Component {
                     {this.context.rootUserData &&
                       this.context.rootUserData.allPlatforms &&
                       this.context.rootUserData.allPlatforms.map((p) => {
+                        var platforms = this.context.allPlatforms.filter(
+                          (pl) => pl.id == p
+                        );
+                        console.log(platforms);
+                        if (!platforms[0]) return "";
+                        var pData = platforms[0];
+                        if (!pData.name && !pData.description) return "";
                         return (
                           <li className="single-myPlatform">
                             <div>
@@ -96,27 +103,15 @@ class Home extends React.Component {
                                 </button>
                               )}
                             </div>
-                            {(() => {
-                              var platforms = this.context.allPlatforms.filter(
-                                (pl) => pl.id == p
-                              );
-                              console.log(platforms);
-                              if (!platforms[0]) return "";
-                              else {
-                                var pData = platforms[0];
-                                return (
-                                  <div className="platform-nd">
-                                    <h5>{pData.name}</h5>
-                                    <p>
-                                      {pData.description.length > 100
-                                        ? pData.description.substr(0, 100) +
-                                          "..."
-                                        : pData.description}
-                                    </p>
-                                  </div>
-                                );
-                              }
-                            })()}
+                            <div className="platform-nd">
+                              <h5>{pData.name}</h5>
+                              <p>
+                                {pData.description &&
+                                pData.description.length > 100
+                                  ? pData.description.substr(0, 100) + "..."
+                                  : pData.description}
+                              </p>
+                            </div>
                           </li>
                         );
                       })}

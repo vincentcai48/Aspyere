@@ -19,6 +19,10 @@ class PlatformAdmin extends React.Component {
       settingsChanged: [], //a list of settings that were changed (eg: requireGroup, publicJoin, etc...)
       dbToConnect: "",
       connectDBError: -1,
+      forgivePopup: false,
+      forgiveId: "",
+      forgiveAnswer: "",
+      instructionsText: "",
     };
   }
 
@@ -55,7 +59,7 @@ class PlatformAdmin extends React.Component {
   addToSettingsChanged = (setting) => {
     this.setState((prevState) => {
       var newSettingsChanged = prevState.settingsChanged;
-      var settingsToIgnore = ["dbToConnect"];
+      var settingsToIgnore = ["dbToConnect", "forgiveId", "forgiveAnswer"];
       if (
         !newSettingsChanged.includes(setting) &&
         !settingsToIgnore.includes(setting)
@@ -220,7 +224,7 @@ class PlatformAdmin extends React.Component {
     this.setState({ isLoading: true });
 
     const options = {
-      maxSizeMB: 1,
+      maxSizeMB: 3,
       useWebWorker: true,
     };
     const compressedFile = await imageCompression(file, options);
@@ -280,8 +284,31 @@ class PlatformAdmin extends React.Component {
       });
   };
 
+  forgive = async () => {
+    this.setState({ forgivePopup: false, isLoading: true });
+    console.log(this.state.forgiveId, this.state.forgiveAnswer);
+    var forgive = pFunctions.httpsCallable("forgive");
+    forgive({
+      platformId: this.context.platform,
+      questionId: this.state.forgiveId,
+      forgiveAnswer: this.state.forgiveAnswer,
+    })
+      .then((res) => {
+        if (res.data.isError) {
+          this.setState({ isError: true, isLoading: false });
+          console.log(res.data);
+        } else {
+          this.setState({ isLoading: false });
+          console.log(res.data);
+        }
+      })
+      .catch((e) => {
+        this.setState({ isError: true, isLoading: false });
+        console.log(e);
+      });
+  };
+
   render() {
-    console.log(this.state);
     return (
       <div id="platformAdmin">
         {this.state.settingsChanged.length > 0 && (
@@ -384,6 +411,19 @@ class PlatformAdmin extends React.Component {
               ></input>
             </div>
           </div>
+          <h3>Instructions Text</h3>
+          <div className="textarea-container">
+            <div className="tac-head">
+              <div>On the Questions Page</div>
+              <p>Instructions for how to submit answers</p>
+            </div>
+            <textarea
+              onChange={this.changeState}
+              value={this.state.instructionsText}
+              name="instructionsText"
+              placeholder="Write some instructions..."
+            ></textarea>
+          </div>
           <h3>Settings</h3>
           <div className="toggle-container">
             <input
@@ -483,6 +523,19 @@ class PlatformAdmin extends React.Component {
                   );
                 })}
           </ul>
+          <h3>Forgives</h3>
+          <button
+            className="sb"
+            onClick={() => {
+              this.setState({
+                forgivePopup: true,
+                forgiveId: "",
+                forgiveAnswer: "",
+              });
+            }}
+          >
+            Perform a Forgive
+          </button>
         </div>
 
         {this.state.showConnectDB && (
@@ -533,6 +586,42 @@ class PlatformAdmin extends React.Component {
               <button
                 className="cancel-button"
                 onClick={() => this.setState({ showConnectDB: false })}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {this.state.forgivePopup && (
+          <div className="grayed-out-background">
+            <div className="popup nsp forgive">
+              <h4>Perform a Forgive</h4>
+              <p>Forgive a question across the platform</p>
+              <input
+                name="forgiveId"
+                placeholder="Question ID"
+                value={this.state.forgiveId}
+                onChange={this.changeState}
+              ></input>
+              <input
+                name="forgiveAnswer"
+                placeholder="Forgiven Answer"
+                value={this.state.forgiveAnswer}
+                onChange={this.changeState}
+              ></input>
+              <button className="submit-button" onClick={this.forgive}>
+                Forgive
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() =>
+                  this.setState({
+                    forgivePopup: false,
+                    forgiveAnswer: "",
+                    forgiveId: "",
+                  })
+                }
               >
                 Cancel
               </button>

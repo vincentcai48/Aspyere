@@ -288,19 +288,23 @@ class LobbyPlatform extends React.Component {
               </div>
             )}
 
-          {this.state.groupsList.length == 0 && (
-            <div>
-              <h3>You Haven't Created a {this.props.groupName} Yet!</h3>
+          {this.state.groupsList.length == 0 &&
+            this.props.platformSettings &&
+            this.props.platformSettings.admins.includes(
+              pAuth.currentUser.uid
+            ) && (
               <div>
-                {this.props.privateSettings.groupCreateCode &&
-                  `Create a ${this.props.groupName} with the code: ${this.props.privateSettings.groupCreateCode}`}
+                <h3>You Haven't Created a {this.props.groupName} Yet!</h3>
+                <div>
+                  {this.props.privateSettings.groupCreateCode &&
+                    `Create a ${this.props.groupName} with the code: ${this.props.privateSettings.groupCreateCode}`}
+                </div>
+                <div>
+                  {this.props.privateSettings.joinCode &&
+                    `Join individually with the code: ${this.props.privateSettings.joinCode}`}
+                </div>
               </div>
-              <div>
-                {this.props.privateSettings.joinCode &&
-                  `Join individually with the code: ${this.props.privateSettings.joinCode}`}
-              </div>
-            </div>
-          )}
+            )}
 
           <ul id="groups-list">
             {this.state.groupsList

@@ -206,6 +206,19 @@ class EditEvent extends React.Component {
     });
   };
 
+  deleteQuestion = () => {
+    this.setState((p) => {
+      var qs = [...p.questions];
+      console.log(qs);
+      qs.splice(p.questionToEdit, 1);
+      console.log(qs);
+      this.discardQuestionSettings();
+      return {
+        questions: qs,
+      };
+    });
+  };
+
   //the button has a "name" attribute that is the index in the "questions" array
   editEvent = (e) => {
     console.log(e.target.name);
@@ -495,6 +508,17 @@ class EditEvent extends React.Component {
                 >
                   Discard
                 </button>
+                {this.state.questionToEdit >= 0 && (
+                  <div>
+                    <hr></hr>
+                    <button
+                      className="cancel-button"
+                      onClick={this.deleteQuestion}
+                    >
+                      Delete This Question
+                    </button>
+                  </div>
+                )}
               </section>
             )}
             {this.state.questionToEdit && this.state.questionToEdit >= 0 && (

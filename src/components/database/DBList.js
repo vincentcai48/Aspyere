@@ -80,7 +80,7 @@ class DBList extends React.Component {
               <i className="fas fa-database"></i>
               {db.name}
             </h2>
-            <p>{db.description}</p>
+            <p className="db-description">{db.description}</p>
             <p>Created by {db.creator}</p>
           </button>
         </li>

@@ -10,7 +10,7 @@ import Loading from "../Loading";
 import personIcon from "../../images/person-icon.png";
 import MyStats from "./MyStats";
 
-//PROPS: Object() groupData, Function() getGroupAdminData, Array[] recentActivity, Array[] allUsers, Date() lastViewed, Object() privateGroupSettings, String groupName, Number limit
+//PROPS: Object() groupData, Function() getGroupAdminData, Array[] recentActivity, Array[] allUsers, Date() lastViewed, Object() privateGroupSettings, String groupName, Number limit, Function() getLastViewed (only to get the initial last viewed from firestore. Only call it in componentDidMount())
 class GroupAdmin extends React.Component {
   constructor() {
     super();
@@ -54,6 +54,7 @@ class GroupAdmin extends React.Component {
       inputJoinCode: this.props.privateGroupSettings.joinCode,
       inputDifficulty: this.props.groupData.difficulty,
     });
+    this.props.getLastViewed(this.props.groupData.id);
     // var doc = await pFirestore
     //   .collection("platforms")
     //   .doc(this.context.platform)
@@ -348,6 +349,10 @@ class GroupAdmin extends React.Component {
   };
 
   render() {
+    console.log(
+      this.state.inputJoinCode,
+      this.props.privateGroupSettings.joinCode
+    );
     return (
       <div id="groupAdmin-container">
         <section id="recent-activity">
@@ -363,7 +368,7 @@ class GroupAdmin extends React.Component {
             {[...this.props.recentActivity].map((a) => {
               var score = this.getScore(a.questions);
               return (
-                <li className="single-activity">
+                <li className="single-activity" key={a.eventName}>
                   <div className="activity-time">
                     {this.getTimeString(a.time)}
                   </div>
@@ -379,7 +384,7 @@ class GroupAdmin extends React.Component {
             {this.props.recentActivity.length <= 0 && (
               <div className="no-ra-text">No Recent Activity</div>
             )}
-            <li className="view-more-recent-activity">
+            <li className="view-more-recent-activity" key="unique">
               <button onClick={() => this.generateMoreRecentActivity(7)}>
                 <i className="fas fa-plus-circle"></i>
                 <span>7 Days</span>
@@ -407,7 +412,7 @@ class GroupAdmin extends React.Component {
                 })
                 .map((user) => {
                   return (
-                    <li>
+                    <li key={user.id}>
                       <div className="li-main">
                         <div className="member-name">
                           <img className="person-icon" src={personIcon} />
@@ -495,7 +500,7 @@ class GroupAdmin extends React.Component {
               name="inputIsPublic"
               type="checkbox"
               onChange={this.changeStateCheckbox}
-              checke={this.state.inputIsPublic}
+              checked={this.state.inputIsPublic}
             ></input>
           </div>
           <div className="input-field-container">
@@ -525,7 +530,7 @@ class GroupAdmin extends React.Component {
               Update Join Code
             </button>
           </div>
-          <div class="danger-zone">
+          <div className="danger-zone">
             <p>Danger Zone</p>
             <div>
               <button

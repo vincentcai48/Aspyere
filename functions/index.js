@@ -6,6 +6,32 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+const { google } = require("googleapis");
+const { GoogleAuth } = require("google-auth-library");
+const billing = google.cloudbilling("v1").projects;
+const PROJECT_ID = process.env.GCLOUD_PROJECT;
+const PROJECT_NAME = `projects/${PROJECT_ID}`;
+
+exports.getBillingInfo = functions.https.onRequest(async (req, res) => {
+  setCredentialsForBilling();
+  const billingInfo = await billing.getBillingInfo({ name: PROJECT_NAME });
+  console.log(`Billing Info: ${JSON.stringify(billingInfo)}`);
+});
+
+function setCredentialsForBilling() {
+  const client = new GoogleAuth({
+    scopes: [
+      "https://www.googleapis.com/auth/cloud-billing",
+      "https://www.googleapis.com/auth/cloud-platform",
+    ],
+  });
+
+  // Set credential globally for all requests
+  google.options({
+    auth: client,
+  });
+}
+
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
@@ -31,8 +57,46 @@ exports.helloWorld = functions.https.onRequest(async (request, response) => {
 //     })
 // })
 
-exports.onNewUser = functions.auth.user().onCreate((user) => {
-  db.collection("users")
+exports.receiveBillingNotice = functions.pubsub
+  .topic("billing")
+  .onPublish(async (message) => {
+    const data = message.json;
+    /*IMPORTANT: AMOUNT TO KILL PROJECT IS $200 */
+    const killingProjectAmount = 200;
+    const cost = data.costAmount;
+    console.log("COST: " + cost);
+    if (cost && cost >= killingProjectAmount) {
+      await billingKillSwitch();
+      return true;
+    }
+    console.log("Billing not shut off");
+    return false;
+  });
+
+async function billingKillSwitch() {
+  setCredentialsForBilling();
+  if (PROJECT_NAME) {
+    const billingInfo = await billing.getBillingInfo({ name: PROJECT_NAME });
+    if (billingInfo.data.billingEnabled) {
+      const result = await billing.updateBillingInfo({
+        name: PROJECT_NAME,
+        requestBody: { billingAccountName: "" },
+      });
+      console.log(
+        `URGENT!!! DISABLED BILLING FOR ${PROJECT_NAME} AUTOMATICALLY DUE TO COST EXCEEDING LIMITATIONS`
+      );
+      console.log(JSON.stringify(result));
+    } else {
+      console.log("Already disabled billing");
+    }
+  }
+}
+
+exports.onNewUser = functions.auth.user().onCreate(async (user) => {
+  var settings = await db.collection("settings").doc("settings").get();
+  var defaultPlatform = settings.data()["defaultPlatform"];
+  await db
+    .collection("users")
     .doc(user.uid)
     .set({
       dateCreated: admin.firestore.FieldValue.serverTimestamp(),
@@ -40,10 +104,11 @@ exports.onNewUser = functions.auth.user().onCreate((user) => {
       uid: user.uid,
       email: user.email,
       imageURL: user.photoURL,
-      platform: null,
-      allPlatforms: [],
+      platform: defaultPlatform,
+      allPlatforms: defaultPlatform ? [defaultPlatform] : [],
     });
-  db.collection("settings")
+  await db
+    .collection("settings")
     .doc("usersMapping")
     .update({ [user.uid]: { displayName: user.displayName || user.email } });
 });
@@ -64,7 +129,7 @@ exports.createPlatform = functions.https.onCall(async (data, context) => {
       groupOptionsOn: false,
       publicCreateGroup: false,
       publicJoin: false,
-      requireGroup: true,
+      requireGroup: false,
       views: 1,
     });
 
@@ -945,6 +1010,9 @@ async function generateQuestionFromDB(
   platformId,
   difficulty
 ) {
+  const limit = 10; //Change this if needed, but limit to 10 for now.
+  const randomNum = hashToNumber(userId); //keep this random number constant, so question id and the question match, just mod this random number accordingly.
+
   //Step 5: Get the database id, generate if random.
   var dbId = question.databaseId;
   if (!dbId) dbId = await getRandomDB(platformId, userId); //here this is if the inputed db is undefined, then get a random DB
@@ -984,6 +1052,7 @@ async function generateQuestionFromDB(
       .collection("questions")
       .where("difficulty", ">=", diffLower)
       .where("difficulty", "<=", diffUpper)
+      .limit(limit)
       .get();
   } else {
     //if there are tags, query with tags. Firestore only allows array-contains-any queries of 10 elements max.
@@ -995,16 +1064,14 @@ async function generateQuestionFromDB(
       .where("difficulty", ">=", diffLower)
       .where("difficulty", "<=", diffUpper)
       .where("tags", "array-contains-any", tags)
+      .limit(limit)
       .get();
   }
   if (questionOptions.docs.length > 0) {
     return {
-      ...questionOptions.docs[
-        hashToNumber(userId) % questionOptions.docs.length
-      ].data(),
+      ...questionOptions.docs[randomNum % questionOptions.docs.length].data(),
       questionId:
-        questionOptions.docs[hashToNumber(userId) % questionOptions.docs.length]
-          .id,
+        questionOptions.docs[randomNum % questionOptions.docs.length].id,
       dbId: dbId,
       points: question.points,
       stage: 1,
@@ -1019,17 +1086,14 @@ async function generateQuestionFromDB(
       .collection("questions")
       .where("difficulty", ">=", diffLower)
       .where("difficulty", "<=", diffUpper)
+      .limit(limit)
       .get();
     //then check again if the array is empty or not
     if (questionOptions.docs.length > 0) {
       return {
-        ...questionOptions.docs[
-          hashToNumber(userId) % questionOptions.docs.length
-        ].data(),
+        ...questionOptions.docs[randomNum % questionOptions.docs.length].data(),
         questionId:
-          questionOptions.docs[
-            hashToNumber(userId) % questionOptions.docs.length
-          ].id,
+          questionOptions.docs[randomNum % questionOptions.docs.length].id,
         dbId: dbId,
         points: question.points,
         stage: 2,
@@ -1040,17 +1104,15 @@ async function generateQuestionFromDB(
         .collection("databases")
         .doc(dbId)
         .collection("questions")
-        .limit(10) //Change this if needed, but limit to 10 for now.
+        .limit(limit)
         .get();
       if (questionOptions.docs.length > 0) {
         return {
           ...questionOptions.docs[
-            hashToNumber(userId) % questionOptions.docs.length
+            randomNum % questionOptions.docs.length
           ].data(),
           questionId:
-            questionOptions.docs[
-              hashToNumber(userId) % questionOptions.docs.length
-            ].id,
+            questionOptions.docs[randomNum % questionOptions.docs.length].id,
           dbId: dbId,
           points: question.points,
           stage: 3,
@@ -1156,8 +1218,12 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
   eventRecords.forEach((q) => {
     if (!q || q.isError) recordQuestions[index] = { isError: true };
     else {
+      var lowerCaseAnswers = q.answers.map((a) => String(a).toLowerCase());
+
       recordQuestions[index] = {
-        isCorrect: q.answers.includes(String(data.answers[index])),
+        isCorrect: lowerCaseAnswers.includes(
+          String(data.answers[index]).toLowerCase()
+        ),
         points: Number(q.points),
         dbId: q.dbId,
         questionId: q.questionId,
@@ -1197,9 +1263,12 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
   // );
   // if (!existingUserRecords.isFirstTime) return { isError: true, errorType: 4 };
 
+  var questionIds = recordQuestions.map((rq) => rq.questionId);
+
   //Step 5: add the records, in a separate document.
   await userData.ref.collection(group).doc(data.eventId).set({
     questions: recordQuestions,
+    questionIds: questionIds,
     timeSubmitted: admin.firestore.FieldValue.serverTimestamp(),
     eventId: data.eventId,
     eventName: eventName,
@@ -1241,3 +1310,62 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
   };
 });
 //returns Object { isError: , errorType: 1 - deadline passed; 2 - event records not found; 3 - event not found, 4 - already submitted, 5 - not registered in database }
+
+//data: {platformId: , questionId: , forgiveAnswer: }
+exports.forgive = functions.https.onCall(async (data, context) => {
+  try {
+    var isAdmin = await checkIfAdmin(data.platformId, context.auth.uid);
+    if (!isAdmin) return { isError: true, errorType: 1 };
+    var forgiveAnswer = String(data.forgiveAnswer).toLowerCase();
+    var allUsers = await db
+      .collection("platforms")
+      .doc(data.platformId)
+      .collection("users")
+      .get();
+    for (let i = 0; i < allUsers.docs.length; i++) {
+      var userDoc = allUsers.docs[i];
+      var allGroupCollections = await userDoc.ref.listCollections();
+      var batch = db.batch();
+      for (let index = 0; index < allGroupCollections.length; index++) {
+        const group = allGroupCollections[index];
+        var pointsToAdd = 0;
+        var eventsWithThisQuestion = await group
+          .where("questionIds", "array-contains", data.questionId)
+          .get();
+        eventsWithThisQuestion.docs.forEach((eventDoc) => {
+          var docData = eventDoc.data();
+          var questions = [...docData.questions];
+          questions = questions.map((q) => {
+            if (q.questionId == data.questionId && !q.isCorrect) {
+              console.log("FORGIVING!!!", q.questionId, eventDoc.id);
+              q.acceptedAnswers = [...q.acceptedAnswers, data.forgiveAnswer];
+              if (String(q.answer).toLowerCase() == forgiveAnswer) {
+                pointsToAdd += Number(q.points);
+                q.isCorrect = true;
+              }
+              return q;
+            } else {
+              return q;
+            }
+          });
+
+          batch.update(eventDoc.ref, { questions: questions });
+        });
+        try {
+          batch.set(
+            group.doc("userData"),
+            {
+              totalPoints: admin.firestore.FieldValue.increment(pointsToAdd),
+            },
+            { merge: true }
+          );
+        } catch (e) {}
+      }
+      await batch.commit();
+    }
+    return { isError: false };
+  } catch (e) {
+    return { isError: true, errorType: 2, errorMessage: e };
+  }
+});
+//returns {isError: , errorType: }

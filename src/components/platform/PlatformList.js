@@ -29,7 +29,12 @@ class PlatformList extends React.Component {
   }
 
   joinPlatform = (id) => {
-    if (this.context.rootUserData.platform) {
+    console.log(id);
+    if (
+      this.context.rootUserData.platform &&
+      this.context.rootUserData.allPlatforms &&
+      this.context.rootUserData.allPlatforms.includes(id)
+    ) {
       this.context.joinPlatform(id);
     } else {
       this.context.setPlatform(id);
@@ -58,6 +63,10 @@ class PlatformList extends React.Component {
       });
   };
 
+  forgive = () => {
+    var forgive = pFunctions.httpsCallable("forgive");
+  };
+
   render() {
     return (
       <div id="platformList-container">
@@ -76,6 +85,7 @@ class PlatformList extends React.Component {
         </button>
         <ul id="platformList-ul">
           {this.context.allPlatforms.map((p) => {
+            if (!p.name && !p.description) return;
             return (
               <li className="single-platform" key={p.id}>
                 <h3>{p.name}</h3>

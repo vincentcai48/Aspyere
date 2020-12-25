@@ -81,7 +81,6 @@ class Platform extends React.Component {
             if (isAdmin) this.getPrivateSettings();
             isFirstTime = false;
             //HERE YOU SET THE SECOND STAGE TO FALSE
-            console.log("hello");
           }
           //Database Mapping
           if (isAdmin) {
@@ -97,7 +96,6 @@ class Platform extends React.Component {
   //returns true or false if the user is in the platform or not
   //ALSO sets usersettings when it calls the database.
   isJoined = async (requireGroup) => {
-    console.log(requireGroup);
     var doc = await pFirestore
       .collection("platforms")
       .doc(this.context.platform)
@@ -300,6 +298,7 @@ class Platform extends React.Component {
       .doc(groupId)
       .get()
       .then(async (doc) => {
+        console.log(groupId);
         if (!doc.exists) this.setState({ isGroupNotExist: true });
         this.setState({
           groupData: { ...doc.data(), id: doc.id },
@@ -312,7 +311,8 @@ class Platform extends React.Component {
               ? 1
               : 2,
         });
-        await this.getLastViewed(doc.id);
+        console.log(groupId);
+
         //then get private group settings (group join code etc...)
         await pFirestore
           .collection("platforms")
@@ -321,10 +321,13 @@ class Platform extends React.Component {
           .doc(groupId)
           .get()
           .then((pgs) => {
+            console.log(pgs.exists);
             if (pgs.exists) {
+              console.log(pgs.data());
               this.setState({ privateGroupSettings: pgs.data() });
             }
-          });
+          })
+          .catch((e) => console.log(e));
       })
       .catch((e) => {
         //if the group NO Longer exists
@@ -386,7 +389,6 @@ class Platform extends React.Component {
   };
 
   getPastEvents = async (isRefresh) => {
-    console.log("Past Events!!");
     var nowTime = fbTimestamp.fromDate(new Date());
     //first get the current events
     var allEvents;
@@ -409,7 +411,7 @@ class Platform extends React.Component {
       var arr = isRefresh ? [] : [...prevState.pastEvents];
       allEvents.docs.forEach((e) => {
         var newData = { ...e.data() };
-        console.log(e.data());
+
         newData.startTime = newData.startTime.toDate();
         newData.endTime = newData.endTime.toDate();
         arr.push({ ...newData, id: e.id });
@@ -424,7 +426,6 @@ class Platform extends React.Component {
   //get from the actual user records of events (including what they got right or wrong), NOT from the platform level "events" collection.
   getCompletedEvents = async (isRefresh) => {
     var groupId = this.state.groupData.id || "individual";
-    console.log(isRefresh, this.state.lastDocCompletedEvents);
 
     var query = pFirestore
       .collection("platforms")
@@ -435,13 +436,11 @@ class Platform extends React.Component {
       .orderBy("timeSubmitted", "desc");
     var eventsList;
     if (!this.state.lastDocCompletedEvents) {
-      console.log("NO MORE DOCS");
       return;
     }
     if (this.state.lastDocCompletedEvents === -1 || isRefresh) {
       eventsList = await query.limit(this.state.limit).get();
     } else {
-      console.log("PAGINATION!!");
       eventsList = await query
         .startAfter(this.state.lastDocCompletedEvents)
         .limit(this.state.limit)
@@ -449,13 +448,13 @@ class Platform extends React.Component {
     }
     this.setState((prevState) => {
       var arr = isRefresh ? [] : [...prevState.completedEvents];
-      console.log(eventsList.docs);
+
       eventsList.docs.forEach((e) => {
         var newObj = { ...e.data() };
         newObj.timeSubmitted = e.data().timeSubmitted.toDate();
         arr.push({ ...newObj, id: e.id });
       });
-      console.log(arr, eventsList.docs[eventsList.docs.length - 1]);
+
       return {
         completedEvents: [...arr],
         lastDocCompletedEvents: eventsList.docs[eventsList.docs.length - 1],
@@ -497,7 +496,6 @@ class Platform extends React.Component {
   };
 
   render() {
-    console.log(this.state.pastEvents);
     if (this.state.isLoadingPlatform)
       return (
         <div>
@@ -531,6 +529,7 @@ class Platform extends React.Component {
             privateGroupSettings={this.state.privateGroupSettings}
             groupName={this.state.platformSettings.groupName}
             limit={this.state.limit}
+            getLastViewed={this.getLastViewed}
           />
         );
         break;
@@ -574,7 +573,15 @@ class Platform extends React.Component {
     if (this.state.doesNotExist)
       return (
         <div className="grayed-out-background">
-          <div className="popup nsp">This Platform No Longer Exists</div>
+          <div className="popup nsp">
+            This Platform No Longer Exists
+            <button
+              className="sb"
+              onClick={() => this.context.setPlatform(null)}
+            >
+              Explore New Platforms
+            </button>
+          </div>
         </div>
       );
     if (this.state.isGroupNotExist) {
