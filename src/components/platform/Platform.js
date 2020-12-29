@@ -50,6 +50,9 @@ class Platform extends React.Component {
       //for completed events (in MyStats):
       completedEvents: [],
       lastDocCompletedEvents: -1,
+
+      //platform options:
+      showOptions: false,
     };
   }
 
@@ -495,6 +498,23 @@ class Platform extends React.Component {
       );
   };
 
+  sendAdminRequest = async () => {
+    try {
+      var sendPlatformAdminRequest = pFunctions.httpsCallable(
+        "sendPlatformAdminRequest"
+      );
+      var res = await sendPlatformAdminRequest({
+        platformId: this.state.platformSettings.id,
+      });
+      this.setState({ showOptions: false });
+      if (res.data.isError) {
+        console.log(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   render() {
     if (this.state.isLoadingPlatform)
       return (
@@ -651,9 +671,16 @@ class Platform extends React.Component {
                     </li>
                   ))}
               </ul>
-              <button className="sb unjoin-button" onClick={this.unjoin}>
-                Switch {this.state.groupData && this.state.groupData.groupName}
-              </button>
+              <div className="last-row">
+                <button className="sb unjoin-button" onClick={this.unjoin}>
+                  Switch{" "}
+                  {this.state.groupData && this.state.groupData.groupName}
+                </button>
+                <button
+                  className="fas fa-info-circle platform-more"
+                  onClick={() => this.setState({ showOptions: true })}
+                ></button>
+              </div>
             </div>
 
             <div
@@ -719,6 +746,46 @@ class Platform extends React.Component {
               publicJoin={this.state.platformSettings.publicJoin}
               platformSettings={this.state.platformSettings}
             />
+          </div>
+        )}
+
+        {this.state.showOptions && (
+          <div className="grayed-out-background">
+            <div className="popup nsp platformOptions">
+              <button
+                className="cancel-button"
+                onClick={() => this.setState({ showOptions: false })}
+              >
+                Close
+              </button>
+              <h3>Platform Options</h3>
+              <ul>
+                {this.state.platformSettings.admins &&
+                  !this.state.platformSettings.admins.includes(
+                    pAuth.currentUser.uid
+                  ) && (
+                    <li className="single-platform-option">
+                      <h6>Admin Request</h6>
+                      <p>Request to become an admin of this platform</p>
+                      <div className="platform-option-body">
+                        {this.state.platformSettings.adminRequests &&
+                        this.state.platformSettings.adminRequests.includes(
+                          pAuth.currentUser.uid
+                        ) ? (
+                          <div>Already sent a request</div>
+                        ) : (
+                          <button
+                            className="sb"
+                            onClick={this.sendAdminRequest}
+                          >
+                            Send a Request
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  )}
+              </ul>
+            </div>
           </div>
         )}
       </div>

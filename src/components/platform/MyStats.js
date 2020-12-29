@@ -1,11 +1,7 @@
 import React from "react";
 import { PContext } from "../../services/context";
 import { displayTime } from "../../services/globalFunctions";
-import ReactHtmlParser, {
-  processNodes,
-  convertNodeToElement,
-  htmlparser2,
-} from "react-html-parser";
+import TextDisplay from "../TextDisplay";
 
 //PROPS: Object() userData (this includes the ID), String groupName, Array[] completedEvents, Function() getCompletedEvents(), Function() refreshCompletedEvents()
 class MyStats extends React.Component {
@@ -195,13 +191,9 @@ class MyStats extends React.Component {
                                 </div>
                                 <div className="col-2">
                                   <div className="q-text">
-                                    {q.text &&
-                                      ReactHtmlParser(
-                                        q.text.replaceAll(
-                                          "[&&linebreak]",
-                                          "<br/>"
-                                        )
-                                      )}
+                                    {q.text && (
+                                      <TextDisplay text={q.text}></TextDisplay>
+                                    )}
                                   </div>
                                   <ul className="q-images">
                                     {q.imageURLs &&

@@ -142,7 +142,6 @@ class EventsList extends React.Component {
   };
 
   render() {
-    console.log("ALL EVENTS:", this.props.allEvents);
     var events = this.state.isPast
       ? this.props.pastEvents
       : this.props.allEvents;
@@ -162,7 +161,7 @@ class EventsList extends React.Component {
           </div>
         )}
         <div className="section-header">
-          {this.state.isPast ? <h2>Past Events</h2> : <h2>All Events</h2>}
+          {this.state.isPast ? <h2>Past Events</h2> : <h2>Upcoming Events</h2>}
           <p>Upcoming events or live now hosted on this platform</p>
           <button
             className="past-events-button"

@@ -12,6 +12,7 @@ import PlatformList from "./components/platform/PlatformList.js";
 import LiveQuestions from "./components/event/LiveQuestions.js";
 import Auth from "./components/Auth.js";
 import Loading from "./components/Loading.js";
+import "katex/dist/katex.min.css";
 
 class App extends React.Component {
   constructor() {

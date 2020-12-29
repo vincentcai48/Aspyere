@@ -123,6 +123,7 @@ exports.createPlatform = functions.https.onCall(async (data, context) => {
       name: data.name,
       description: data.description,
       admins: [context.auth.uid],
+      adminRequests: [],
       databases: [],
       groupName: "Group",
       groupOptions: [],
@@ -201,9 +202,77 @@ function generateRandomCode() {
   return (new Date().getTime() * Math.random()).toString(36).replace(".", "");
 }
 
+async function checkIfDBAdmin(dbId, userId) {
+  var doc = await db.collection("databases").doc(dbId).get();
+  if (doc.data()["admins"] && doc.data()["admins"].includes(userId)) {
+    return true;
+  }
+  return false;
+}
+
+//data: {dbId: ,}
+exports.deleteDB = functions.https.onCall(async (data, context) => {
+  var isAdmin = await checkIfDBAdmin(data.dbId, context.auth.uid);
+  if (!isAdmin)
+    return { isError: true, errorMessage: "Not an Admin of this Database" };
+  try {
+    var batch = db.batch();
+    var dbDoc = await db.collection("databases").doc(data.dbId).get();
+    var dbQuestions = await dbDoc.ref.collection("questions").get();
+    batch.delete(dbDoc.ref);
+    dbQuestions.docs.forEach((q) => batch.delete(q.ref));
+    await batch.commit();
+    return { isError: false };
+  } catch (e) {
+    return { isError: true, errorMessage: e };
+  }
+});
+//{isError: , errorMessage: }
+
+//{fromDBId: , toDBId: }
+exports.copyDBQuestions = functions.https.onCall(async (data, context) => {
+  try {
+    //first check if admin of BOTH databases
+    var isAdmin = await checkIfDBAdmin(data.fromDBId, context.auth.uid);
+    if (!isAdmin) return { isError: true, errorType: 2 };
+    isAdmin = await checkIfDBAdmin(data.toDBId, context.auth.uid);
+    if (!isAdmin) {
+      return { isError: true, errorType: 2 };
+    }
+
+    //then proceed
+    var fromDocs = await db
+      .collection("databases")
+      .doc(data.fromDBId)
+      .collection("questions")
+      .get();
+    var promises = []; //list of adds to the toDBId
+
+    fromDocs.docs.forEach((q) => {
+      promises.push(
+        db
+          .collection("databases")
+          .doc(data.toDBId)
+          .collection("questions")
+          .add({ ...q.data() })
+      );
+    });
+    await Promise.all(promises);
+    return { isError: false };
+  } catch (e) {
+    console.log(e);
+    return { isError: true, errorType: 3 };
+  }
+});
+//{isError: ,errorType: 1 - invalid dbId, 2 - Not a db Admin 3 - server error}
+
 //data: {dbId: , userId: }
 exports.promoteDBUser = functions.https.onCall(async (data, context) => {
   try {
+    var isAdmin = await checkIfDBAdmin(data.dbId, context.auth.uid);
+    if (!isAdmin)
+      return { isError: true, errorMessage: "Not an Admin of this Database" };
+
     await db
       .collection("databases")
       .doc(data.dbId)
@@ -221,6 +290,10 @@ exports.promoteDBUser = functions.https.onCall(async (data, context) => {
 //data: {dbId: , userId: }
 exports.deleteDBUser = functions.https.onCall(async (data, context) => {
   try {
+    var isAdmin = await checkIfDBAdmin(data.dbId, context.auth.uid);
+    if (!isAdmin)
+      return { isError: true, errorMessage: "Not an Admin of this Database" };
+
     await db
       .collection("databases")
       .doc(data.dbId)
@@ -237,19 +310,26 @@ exports.deleteDBUser = functions.https.onCall(async (data, context) => {
 //only for the properties name, description, and isViewable. set to null if you don't want to update this.
 //data: {dbId: , isViewable: , name:, description: }
 exports.updateDBSettings = functions.https.onCall(async (data, context) => {
-  var updates = {};
-  //so it will still evaluate if isViewable is "false"
-  if (data.isViewable != null) {
-    updates.isViewable = data.isViewable;
+  try {
+    var isAdmin = await checkIfDBAdmin(data.dbId, context.auth.uid);
+    if (!isAdmin) return false;
+
+    var updates = {};
+    //so it will still evaluate if isViewable is "false"
+    if (data.isViewable != null) {
+      updates.isViewable = data.isViewable;
+    }
+    if (data.name) {
+      updates.name = data.name;
+    }
+    if (data.description) {
+      updates.description = data.description;
+    }
+    await db.collection("databases").doc(data.dbId).update(updates);
+    return true;
+  } catch (e) {
+    return false;
   }
-  if (data.name) {
-    updates.name = data.name;
-  }
-  if (data.description) {
-    updates.description = data.description;
-  }
-  await db.collection("databases").doc(data.dbId).update(updates);
-  return true;
 });
 //return true if success, false if error
 
@@ -706,6 +786,64 @@ exports.updatePlatformSettings = functions.https.onCall(
   }
 );
 
+//data: {platformId: }
+exports.sendPlatformAdminRequest = functions.https.onCall(
+  async (data, context) => {
+    try {
+      await db
+        .collection("platforms")
+        .doc(data.platformId)
+        .update({
+          adminRequests: admin.firestore.FieldValue.arrayUnion(
+            context.auth.uid
+          ),
+        });
+      return { isError: false };
+    } catch (e) {
+      console.log(e);
+      return { isError: true };
+    }
+  }
+);
+//{isError: }
+
+//data: {platformId: , userId: this userId of the user being accepted}
+exports.acceptAdminRequest = functions.https.onCall(async (data, context) => {
+  try {
+    var isAdmin = await checkIfAdmin(data.platformId, context.auth.uid);
+    if (!isAdmin) return { isError: true };
+    await db
+      .collection("platforms")
+      .doc(data.platformId)
+      .update({
+        adminRequests: admin.firestore.FieldValue.arrayRemove(data.userId),
+        admins: admin.firestore.FieldValue.arrayUnion(data.userId),
+      });
+    return { isError: false };
+  } catch (e) {
+    console.log(e);
+    return { isError: true };
+  }
+});
+
+//data: {platformId: , userId: this userId of the user being rejected}
+exports.rejectAdminRequest = functions.https.onCall(async (data, context) => {
+  try {
+    var isAdmin = await checkIfAdmin(data.platformId, context.auth.uid);
+    if (!isAdmin) return { isError: true };
+    await db
+      .collection("platforms")
+      .doc(data.platformId)
+      .update({
+        adminRequests: admin.firestore.FieldValue.arrayRemove(data.userId),
+      });
+    return { isError: false };
+  } catch (e) {
+    console.log(e);
+    return { isError: true };
+  }
+});
+
 //data: Object {platformId: , dbId: }
 exports.connectDatabaseToPlatform = functions.https.onCall(
   async (data, context) => {
@@ -795,11 +933,16 @@ exports.updateEvent = functions.https.onCall(async (data, context) => {
 });
 
 async function checkIfAdmin(platformId, userId) {
-  var platformData = await db.collection("platforms").doc(platformId).get();
-  return Boolean(
-    platformData.data().admins && platformData.data().admins.includes(userId)
-  );
+  try {
+    var platformData = await db.collection("platforms").doc(platformId).get();
+    return Boolean(
+      platformData.data().admins && platformData.data().admins.includes(userId)
+    );
+  } catch (e) {
+    return false;
+  }
 }
+//returns a boolean
 
 //data: {platformId: , eventId: }
 exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
@@ -902,12 +1045,13 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
     var groupDoc = await db
       .collection("platforms")
       .doc(data.platformId)
-      .collection("events")
-      .doc(data.eventId)
       .collection("groups")
       .doc(userRecords.groupId)
       .get();
-    if (groupDoc.exists) difficulty = Number(groupDoc.data().difficulty);
+    if (groupDoc.exists) {
+      console.log("Difficulty One: " + groupDoc.data().difficulty);
+      difficulty = Number(groupDoc.data().difficulty);
+    }
   }
 
   //Step 4: Now, with all the data fetched, get the questions data, and generate questions
@@ -1013,6 +1157,13 @@ async function generateQuestionFromDB(
   const limit = 10; //Change this if needed, but limit to 10 for now.
   const randomNum = hashToNumber(userId); //keep this random number constant, so question id and the question match, just mod this random number accordingly.
 
+  console.log(
+    "Question: Offset:" +
+      question.difficultyOffset +
+      " Range: " +
+      question.difficultyRange
+  );
+
   //Step 5: Get the database id, generate if random.
   var dbId = question.databaseId;
   if (!dbId) dbId = await getRandomDB(platformId, userId); //here this is if the inputed db is undefined, then get a random DB
@@ -1039,13 +1190,24 @@ async function generateQuestionFromDB(
 
   //Step 6: Get the possible question options
   difficulty = Number(difficulty);
-  difficulty += Number(question.difficultyRange);
-  var diffLower = difficulty - Math.abs(Number(question.difficultyOffset));
-  var diffUpper = difficulty + Math.abs(Number(question.difficultyOffset));
+  console.log("Difficulty Original: " + difficulty);
+  difficulty += Number(question.difficultyOffset);
+  console.log(
+    "Difficulty after offset of " +
+      question.difficultyOffset +
+      " : " +
+      difficulty
+  );
+  console.log("difficulty range: " + question.difficultyRange);
+  var diffLower = difficulty - Math.abs(Number(question.difficultyRange));
+  var diffUpper = difficulty + Math.abs(Number(question.difficultyRange));
   var questionOptions;
   //Step 6.1: First pass through. Strictly in the range, and containing the tags, if any
   if (question.tags && question.tags.length < 1) {
     //if No tags, query only within range.
+    console.log(
+      "Stage One: NO TAGS - Lower: " + diffLower + " Upper: " + diffUpper
+    );
     questionOptions = await db
       .collection("databases")
       .doc(dbId)
@@ -1056,7 +1218,16 @@ async function generateQuestionFromDB(
       .get();
   } else {
     //if there are tags, query with tags. Firestore only allows array-contains-any queries of 10 elements max.
+
     var tags = question.tags.slice(0, 10);
+    console.log(
+      "Stage One: Yes Tags: " +
+        tags.toString() +
+        " - Lower: " +
+        diffLower +
+        " Upper: " +
+        diffUpper
+    );
     questionOptions = await db
       .collection("databases")
       .doc(dbId)
@@ -1078,8 +1249,11 @@ async function generateQuestionFromDB(
     };
   } else {
     //Step 6.2: Second pass through, if array is empty. Query without tags, and double the range.
-    diffLower -= Math.abs(Number(question.difficultyOffset));
-    diffUpper += Math.abs(Number(question.difficultyOffset));
+    diffLower -= Math.abs(Number(question.difficultyRange));
+    diffUpper += Math.abs(Number(question.difficultyRange));
+    console.log(
+      "Stage Two: No more tags - Lower: " + diffLower + " Upper: " + diffUpper
+    );
     questionOptions = await db
       .collection("databases")
       .doc(dbId)
@@ -1100,6 +1274,13 @@ async function generateQuestionFromDB(
       };
     } else {
       //Step 6.3: Third Pass through, no restrictions, any question in the database is fair game.
+      console.log(
+        "Stage Three: Nothing between Lower: " +
+          diffLower +
+          " and Upper: " +
+          diffUpper +
+          ", so entire DB is queried"
+      );
       questionOptions = await db
         .collection("databases")
         .doc(dbId)

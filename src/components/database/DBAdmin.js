@@ -37,6 +37,11 @@ class DBAdmin extends React.Component {
       isNotSaved: false,
       isLoading: false,
       isError: false,
+      showDeletePopup: false,
+      confirmText: "",
+      copyPopup: false,
+      dbToCopy: "",
+      copyQuestionsError: -1,
     };
   }
 
@@ -213,6 +218,45 @@ class DBAdmin extends React.Component {
     }
   };
 
+  deleteDB = async () => {
+    console.log("DELETING", this.props.parentState.dbId);
+    this.setState({ isLoading: true });
+    var deleteDB = pFunctions.httpsCallable("deleteDB");
+    try {
+      var res = await deleteDB({ dbId: this.props.parentState.dbId });
+      this.setState({ isLoading: false, isError: res.data.isError });
+      if (res.data.isError) {
+        console.error(res.data.errorMessage);
+      }
+    } catch (e) {
+      this.setState({ isLoading: false, isError: true });
+    }
+  };
+
+  copyQuestions = async () => {
+    console.log("COPYING QUESTIONS!");
+    this.setState({ isLoading: true });
+    try {
+      var copyDBQuestions = pFunctions.httpsCallable("copyDBQuestions");
+      var res = await copyDBQuestions({
+        fromDBId: this.props.parentState.dbId,
+        toDBId: this.state.dbToCopy,
+      });
+      console.log(res.data);
+      if (res.data.isError) {
+        this.setState({
+          copyQuestionsError: res.data.errorType,
+          isError: true,
+          isLoading: false,
+        });
+      } else {
+        this.setState({ isLoading: false, copyPopup: false });
+      }
+    } catch (e) {
+      this.setState({ isLoading: false, isError: true, copyQuestionsError: 3 });
+    }
+  };
+
   render() {
     console.log(this.props.parentState);
     if (!pAuth.currentUser) return <Auth />;
@@ -242,14 +286,18 @@ class DBAdmin extends React.Component {
               </div>
             )}
 
-            {this.state.isError && !this.state.isNotSaved && (
-              <div className="heading-note">An Error Occurred</div>
-            )}
-            {this.state.isLoading && !this.state.isNotSaved && (
-              <div className="heading-note">
-                <Loading />
-              </div>
-            )}
+            {this.state.isError &&
+              !this.state.isNotSaved &&
+              !this.state.copyPopup && (
+                <div className="heading-note">An Error Occurred</div>
+              )}
+            {this.state.isLoading &&
+              !this.state.isNotSaved &&
+              !this.state.copyPopup && (
+                <div className="heading-note">
+                  <Loading />
+                </div>
+              )}
 
             <ul id="db-admin-settings">
               <li className="db-admin-dbName">
@@ -338,10 +386,28 @@ class DBAdmin extends React.Component {
                 </ul>
               </li>
             </ul>
+            <div>
+              <button
+                className="bb copy-qs"
+                onClick={() => this.setState({ copyPopup: true, dbToCopy: "" })}
+              >
+                Copy All Questions to Another Database
+              </button>
+            </div>
+            <div className="danger-zone">
+              <p>Danger Zone</p>
+              <div>
+                <button
+                  onClick={() => this.setState({ showDeletePopup: true })}
+                >
+                  Delete This Entire Database
+                </button>
+              </div>
+            </div>
           </section>
         ) : (
           <p id="admin-text">
-            To administer this database, you must be promoted by an exisiting
+            To administer this database, you must be promoted by an existing
             administrator
           </p>
         )}
@@ -390,6 +456,104 @@ class DBAdmin extends React.Component {
               <button
                 className="cancel-button"
                 onClick={() => this.setState({ userToPromote: null })}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {this.state.copyPopup && (
+          <div className="grayed-out-background">
+            <div className="popup nsp connectDB">
+              <h4>Copy Questions to Another Database</h4>
+              <p>
+                Enter the database's public ID in which you want to copy this
+                databases' questions to.
+              </p>
+              <input
+                value={this.state.dbToCopy}
+                name="dbToCopy"
+                onChange={this.changeState}
+                placeholder="Database Public ID"
+              ></input>
+              {this.state.isLoading && (
+                <div>
+                  <Loading />
+                </div>
+              )}
+
+              {this.state.isError && (
+                <div>
+                  {(() => {
+                    switch (this.state.copyQuestionsError) {
+                      case 1:
+                        return "Invalid Database Public ID";
+                        break;
+                      case 2:
+                        return "Not an admin of this database";
+                        break;
+                      case 3:
+                        return "Server Error";
+                        break;
+                      case 4:
+                        return "Not an admin of this Database";
+                        break;
+                      default:
+                        return "Unknown Error";
+                    }
+                  })()}
+                </div>
+              )}
+              <button className="submit-button" onClick={this.copyQuestions}>
+                Copy Questions
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() =>
+                  this.setState({ copyPopup: false, isError: false })
+                }
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {this.state.showDeletePopup && (
+          <div className="grayed-out-background">
+            <div className="popup red nsp">
+              <h4>Are You Sure You Want to Delete The Entire Database?</h4>
+              <p>
+                This will delete all questions, solutions, and settings of this
+                database, and CANNOT BE UNDONE. Type "confirm" to confirm.
+              </p>
+              <input
+                className="redinput"
+                value={this.state.confirmText}
+                name="confirmText"
+                onChange={this.changeState}
+                placeholder="confirm"
+              ></input>
+              {this.state.confirmText === "confirm" && (
+                <button
+                  className="cancel-button"
+                  onClick={() => {
+                    this.deleteDB();
+                    this.setState({ showDeletePopup: false });
+                  }}
+                >
+                  Delete This Database
+                </button>
+              )}
+              <button
+                className="cancel-button"
+                onClick={() =>
+                  this.setState({
+                    showDeletePopup: false,
+                    confirmText: "",
+                  })
+                }
               >
                 Cancel
               </button>

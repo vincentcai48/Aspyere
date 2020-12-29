@@ -531,6 +531,12 @@ button:focus {
 #dbList-container {
   width: 90vw;
   margin: auto;
+  margin-bottom: 30vh;
+}
+
+#dbList-container h2 {
+  font-size: 36px;
+  font-weight: bolder;
 }
 
 ul#db-list {
@@ -563,6 +569,7 @@ li.db-single .db-single-button {
   width: 100vw;
   padding: 2vh 5vw;
   box-sizing: border-box;
+  padding-bottom: 20vh;
 }
 
 #db-title h2,
@@ -652,8 +659,8 @@ li.db-single .db-single-button {
 }
 
 .popup.allQs {
-  border-radius: 5px;
-  border: 5px solid black;
+  border-radius: 8px;
+  border: 3px solid black;
   padding: 3vh 3vw;
   box-sizing: border-box;
   box-shadow: 1px 1px 5px black;
@@ -663,6 +670,25 @@ li.db-single .db-single-button {
 
 #query-container {
   position: relative;
+}
+
+.query-h4 {
+  font-size: 30px;
+  box-shadow: 1px 1px 2px grey;
+  padding: 10px 20px;
+  font-weight: bolder;
+  border-radius: 10px;
+  background-color: lightgrey;
+  margin: 20px 0px;
+}
+
+#query-popup-lobby select {
+  border: 3px solid black;
+  padding: 5px;
+  border-radius: 5px;
+  font-size: 16px;
+  margin-right: 10px;
+  box-shadow: 1px 2px 3px black;
 }
 
 .popup.allQs .cancel-button {
@@ -773,18 +799,67 @@ ul#ul-dbquestions {
 
 .single-question .id-q {
   padding: 5px;
-  border-radius: 15px;
+  border-radius: 10px;
   box-sizing: border-box;
   background-color: black;
   color: white;
   font-weight: bold;
-  width: 250px;
+  width: 270px;
   text-align: center;
   margin: 20px 0px;
 }
 
 .single-question .points {
   margin: 0px 10px;
+}
+
+.copy-qid {
+  margin: 0px;
+  margin-left: 5px;
+  background-color: transparent;
+  border: none;
+  font-weight: bolder;
+  color: white;
+  font-size: inherit;
+}
+
+.copy-qid:hover {
+  text-shadow: 0px 0px 3px white;
+}
+
+.clipboard-notice {
+  padding: 10px;
+  border-radius: 10px;
+  background-color: black;
+  color: white;
+  position: fixed;
+  bottom: 30px;
+  right: 20px;
+  opacity: 1;
+  /* animation-name: copied1;
+  animation-duration: 3s;
+  animation-iteration-count: 1; */
+}
+
+.copy-qs {
+  margin: 30px 0px 60px 0px;
+}
+
+.copy-qid:active .clipboard-notice {
+}
+
+@keyframes copied1 {
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 .single-question .first-line-q {
@@ -794,13 +869,12 @@ ul#ul-dbquestions {
 
 .single-question .first-line-q h6 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .single-question .first-line-q div {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
 }
 
 .first-line-q div button {
@@ -816,7 +890,7 @@ ul#ul-dbquestions {
   width: 80%;
   max-width: 150px;
   font-family: var(--primary-font);
-  border: 2px solid var(--sc);
+  border: 3px solid var(--sc);
   transition: all 0.3s;
   box-shadow: 2px 2px 5px grey;
 }
@@ -859,10 +933,11 @@ ul#ul-dbquestions {
 }
 
 .tags-q li {
-  padding: 5px 15px;
+  padding: 3px 10px;
   border-radius: 15px;
-  background-color: var(--pc);
-  color: white;
+  font-size: 15px;
+  background-color: lightgrey;
+  color: black;
   box-shadow: 2px 2px 5px grey;
   margin: 5px;
 }
@@ -871,6 +946,17 @@ ul#ul-dbquestions {
   margin: 20px 0px;
   font-weight: bolder;
   font-size: 20px;
+}
+
+p.solution-p {
+  padding: 20px 15px;
+  border-radius: 10px;
+  background-color: lightgray;
+  color: black;
+  box-shadow: 1px 2px 2px grey;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 20px 10px;
 }
 
 #admin-text {
@@ -1140,8 +1226,34 @@ section.lobbyPlatform-header {
   margin: 10px 0px 20px 0px;
 }
 
+.platformOptions {
+  position: relative;
+}
+
+.platformOptions > .cancel-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.platformOptions > h3 {
+  font-size: 36px;
+  text-shadow: 1px 1px 2px grey;
+  margin: 10px 60px 10px 0px;
+}
+
+.platformOptions > ul li h6 {
+  font-size: 24px;
+  margin: 30px 0px 0px 0px;
+}
+
+.platformOptions > ul li p {
+  margin: 0px 0px 20px 0px;
+  font-size: 15px;
+}
+
 .unjoin-button {
-  margin-bottom: 10px;
+  margin: 5px;
 }
 
 #group-admins li {
@@ -1427,6 +1539,29 @@ section.lobbyPlatform-header {
 .past-events-ul li .edit-event-button {
 }
 
+#group-header .last-row {
+  display: flex;
+  align-items: center;
+}
+
+.platform-more {
+  color: white;
+  font-size: 20px;
+  background-color: transparent;
+  border: none;
+  margin: 0px;
+  opacity: 0.7;
+  transition: all 0.3s;
+}
+
+.platform-more:hover {
+  opacity: 1;
+}
+
+#platformAdmin {
+  padding-bottom: 20vh;
+}
+
 #platformAdmin h3 {
   font-size: 24px;
   font-weight: bolder;
@@ -1459,21 +1594,69 @@ section.lobbyPlatform-header {
   height: 15vh;
 }
 
+.platformAdmin-innerList.admins li {
+  font-weight: bolder;
+  margin: 5px;
+}
+
+.platformAdmin-innerList.admins li i {
+  margin-right: 5px;
+}
+
+.platformAdmin-innerList.admins.requests li {
+  font-weight: 100;
+  font-size: 15px;
+}
+
 .single-db-platformAdmin {
   font-weight: bolder;
   padding: 10px 15px;
   color: white;
   background-color: black;
-  max-width: 200px;
+  max-width: 600px;
   overflow: hidden;
   margin: 5px;
   box-shadow: 2px 2px 3px grey;
   position: relative;
   transition: all 0.3s;
+  display: inline-block;
   z-index: 1;
 }
 
-.single-db-platformAdmin:hover {
+.admin-request-text {
+  margin-bottom: 5px;
+}
+
+.accept-button,
+.reject-button {
+  margin: 0px 15px;
+  border: 2px solid green;
+  padding: 1px 10px;
+  background-color: green;
+  color: white;
+  border-radius: 7px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.reject-button {
+  border-color: red;
+  background-color: white;
+  color: red;
+  margin-left: -10px;
+}
+
+.accept-button:hover {
+  background-color: white;
+  color: green;
+}
+
+.reject-button:hover {
+  background-color: red;
+  color: white;
+}
+
+.acc .single-db-platformAdmin:hover {
 }
 
 .single-db-platformAdmin i {
@@ -3010,6 +3193,18 @@ button.more-events:hover {
   z-index: 110;
 }
 
+.solution-text {
+  min-height: 100px;
+  max-height: 50vh;
+  max-width: 600px;
+  min-width: 600px;
+}
+
+p.num-qs {
+  font-weight: bold;
+  margin: 30px 0px 0px 0px;
+}
+
 footer {
   width: 100%;
   box-sizing: border-box;
@@ -3289,5 +3484,20 @@ footer {
     z-index: 110;
     padding: 5px 10px;
     width: auto;
+  }
+
+  #edit-question-text {
+    max-width: 80vw;
+    min-width: 80vw;
+  }
+
+  .solution-text {
+    max-width: 80vw;
+    min-width: 80vw;
+  }
+
+  .single-question .first-line-q h6 {
+    margin: 0;
+    font-size: 16px;
   }
 }

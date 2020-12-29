@@ -556,10 +556,10 @@ class EditEvent extends React.Component {
                         </div>
                         <div className="q-info">
                           {q.questionRandomize
-                            ? "Range: " +
-                              q.difficultyRange +
-                              " | Offset: " +
-                              q.difficultyOffset
+                            ? " Offset: " +
+                              q.difficultyOffset +
+                              " | Range: " +
+                              q.difficultyRange
                             : "Question ID: " + q.questionId}
                         </div>
                       </li>

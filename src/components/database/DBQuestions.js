@@ -10,6 +10,7 @@ import { uuid } from "uuidv4";
 import Auth from "../Auth";
 import { Link } from "react-router-dom";
 import imageCompression from "browser-image-compression";
+import TextDisplay from "../TextDisplay";
 
 //PROPS: Object() parentState, Function() changeParentState
 class DBQuestions extends React.Component {
@@ -29,12 +30,15 @@ class DBQuestions extends React.Component {
       questionText: "",
       difficultyInput: "",
       limitInput: 0,
+      solution: "",
+      viewSolution: {},
 
       //popups:
       isAddPopup: false,
       questionEditing: null, //the question id, if null, then you're adding a question.
       questionToDelete: null,
       showLimitPopup: false,
+      showClipboardNotice: false,
       //the all questions query popup
       showAllQuestionsPopup: false,
       sortField: null,
@@ -157,13 +161,16 @@ class DBQuestions extends React.Component {
       .collection("questions")
       .add({
         difficulty: Number(this.state.difficultyInput),
-        text: this.state.questionText.replaceAll("\n", "[&&linebreak]"),
+        text: this.state.questionText.replace(/\n/g, "[&&linebreak]"),
         answers: this.state.answers,
         imageURLs: this.state.imageURLs,
         tags: this.state.tags,
         lastUpdated: fbFieldValue.serverTimestamp(),
         creator: pAuth.currentUser.displayName,
         lastEditor: pAuth.currentUser.displayName,
+        solution: this.state.solution
+          ? this.state.solution.replace(/\n/g, "[&&linebreak]")
+          : "",
       });
     this.clearEditFields();
   };
@@ -176,12 +183,15 @@ class DBQuestions extends React.Component {
       .doc(questionId)
       .update({
         difficulty: Number(this.state.difficultyInput),
-        text: this.state.questionText.replaceAll("\n", "[&&linebreak]"),
+        text: this.state.questionText.replace(/\n/g, "[&&linebreak]"),
         answers: this.state.answers,
         imageURLs: this.state.imageURLs,
         tags: this.state.tags,
         lastUpdated: fbFieldValue.serverTimestamp(),
         lastEditor: pAuth.currentUser.displayName,
+        solution: this.state.solution
+          ? this.state.solution.replace(/\n/g, "[&&linebreak]")
+          : "",
       });
     this.clearEditFields();
   };
@@ -196,6 +206,7 @@ class DBQuestions extends React.Component {
       tags: [...questionObj.tags],
       isAddPopup: true,
       questionEditing: questionObj.id,
+      solution: questionObj.solution,
     });
   };
 
@@ -239,16 +250,21 @@ class DBQuestions extends React.Component {
       tags: [],
       isAddPopup: false,
       questionEditing: null,
+      solution: "",
     });
   };
   //call this once, when you submit the query
   getQueryQuestions = () => {
-    this.setState({ sortField: this.state.inputSortField });
-    this.getNextQuestions();
+    this.setState({
+      sortField: this.state.inputSortField,
+      lastDocAllQuestions: -1,
+    });
+    this.getNextQuestions(true);
   };
 
   getNextQuestions = async (isRefresh) => {
     var sortField = this.state.sortField || this.state.inputSortField;
+    const newLimit = Math.round(this.props.parentState.limit / 2);
     var query = pFirestore
       .collection("databases")
       .doc(this.props.parentState.dbId)
@@ -256,13 +272,15 @@ class DBQuestions extends React.Component {
       .orderBy(sortField, this.state.isAsc ? "asc" : "desc");
     if (!this.state.lastDocAllQuestions) return;
     if (this.state.lastDocAllQuestions === -1 || isRefresh) {
-      query = query.limit(Math.round(this.props.parentState.limit / 2));
+      console.log(this.state.lastDocAllQuestions === -1);
+      console.log(isRefresh);
+      query = query.limit(newLimit);
     } else {
-      query = query
-        .startAfter(this.state.lastDocAllQuestions)
-        .limit(Math.round(this.props.parentState.limit / 2));
+      console.log("Starting After");
+      query = query.startAfter(this.state.lastDocAllQuestions).limit(newLimit);
     }
     var questions = await query.get();
+    console.log("LENGTH:" + questions.docs.length);
     var arr = isRefresh ? [] : [...this.state.queryQuestions];
     questions.docs.forEach((q) => {
       arr.push({ ...q.data(), id: q.id });
@@ -273,8 +291,35 @@ class DBQuestions extends React.Component {
     });
   };
 
+  toggleViewSolution = (questionId) => {
+    this.setState((p) => {
+      var viewSolution = { ...p.viewSolution };
+      viewSolution[questionId] = !Boolean(p.viewSolution[questionId]);
+      console.log(viewSolution);
+      return { viewSolution: viewSolution };
+    });
+  };
+
+  copyQid = (id) => {
+    navigator.clipboard.writeText(id).then(
+      () => {
+        // this.setState({ showClipboardNotice: true });
+        // setInterval(() => {
+        //   this.setState({ showClipboardNotice: false });
+        // }, 6000);
+      },
+      () => {}
+    );
+  };
+
   render() {
     if (!pAuth.currentUser) return <Auth />;
+    if (
+      this.state.lastDocAllQuestions &&
+      this.state.lastDocAllQuestions.exists
+    ) {
+      console.log(this.state.lastDocAllQuestions.data());
+    }
     return (
       <div id="dbquestions-container">
         {/* <div id="first-row">
@@ -301,17 +346,32 @@ class DBQuestions extends React.Component {
           </button>
         )}
 
-        {/**LIST OF QUESTIONS*/}
+        {this.props.parentState.dbQuestions && (
+          <p className="num-qs">
+            {this.props.parentState.dbQuestions.length < 20
+              ? this.props.parentState.dbQuestions.length + " questions"
+              : "20 questions shown"}
+          </p>
+        )}
+
+        {/**LIST OF RECENT QUESTIONS*/}
         <section id="dbquestions-list">
           <ul id="ul-dbquestions">
             {this.props.parentState.dbQuestions.map((q) => {
-              console.log(q);
               return (
                 <li className="single-question" key={q.id}>
                   <hr></hr>
-                  <div className="id-q">ID: {q.id}</div>
+                  <div className="id-q">
+                    ID: {q.id}
+                    <button
+                      className="far fa-copy copy-qid"
+                      onClick={() => this.copyQid(q.id)}
+                    ></button>
+                  </div>
                   <div className="first-line-q">
-                    <h6>{this.renderWithLinebreaks(q.text)}</h6>
+                    <h6>
+                      <TextDisplay text={q.text}></TextDisplay>
+                    </h6>
                     <div>
                       <button
                         className="edit-button"
@@ -342,6 +402,22 @@ class DBQuestions extends React.Component {
                     Answer{q.answers && q.answers.length != 1 && "s"}:{" "}
                     {q.answers && q.answers.toString().replaceAll(",", ", ")}
                   </div>
+                  {q.solution && (
+                    <div className="solution-q">
+                      <button
+                        className="ssb"
+                        onClick={() => this.toggleViewSolution(q.id)}
+                      >
+                        {this.state.viewSolution[q.id] ? "Hide" : "View"}{" "}
+                        Solution
+                      </button>
+                      {this.state.viewSolution[q.id] && (
+                        <p className="solution-p">
+                          <TextDisplay text={q.solution}></TextDisplay>
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <p>
                     Last Edit was at{" "}
                     {q.lastUpdated && q.lastUpdated.toDate().toString()} by{" "}
@@ -480,6 +556,21 @@ class DBQuestions extends React.Component {
                   </div>
                 </div>
 
+                <div>
+                  <h4>Solution:</h4>
+                  <textarea
+                    placeholder="Write a Solution..."
+                    onChange={this.changeState}
+                    name="solution"
+                    value={
+                      this.state.solution
+                        ? this.state.solution.replaceAll("[&&linebreak]", "\n")
+                        : ""
+                    }
+                    className="solution-text"
+                  ></textarea>
+                </div>
+
                 <button
                   className="submit-button"
                   onClick={
@@ -575,6 +666,7 @@ class DBQuestions extends React.Component {
           </div>
         )}
 
+        {/* WHEN ALL QUESTIONS ARE QUERIED */}
         {this.state.showAllQuestionsPopup && (
           <div className="grayed-out-background">
             <div className="popup allQs">
@@ -606,13 +698,14 @@ class DBQuestions extends React.Component {
 
                   <ul id="ul-dbqueryquestions">
                     {this.state.queryQuestions.map((q) => {
-                      console.log(q);
                       return (
                         <li className="single-question" key={"query" + q.id}>
                           <hr></hr>
                           <div className="id-q">ID: {q.id}</div>
                           <div className="first-line-q">
-                            <h6>{this.renderWithLinebreaks(q.text)}</h6>
+                            <h6>
+                              <TextDisplay text={q.text}></TextDisplay>
+                            </h6>
                             <div>
                               <button
                                 className="edit-button"
@@ -646,6 +739,24 @@ class DBQuestions extends React.Component {
                             {q.answers &&
                               q.answers.toString().replaceAll(",", ", ")}
                           </div>
+                          {q.solution && (
+                            <div className="solution-q">
+                              <button
+                                className="ssb"
+                                onClick={() => this.toggleViewSolution(q.id)}
+                              >
+                                {this.state.viewSolution[q.id]
+                                  ? "Hide"
+                                  : "View"}{" "}
+                                Solution
+                              </button>
+                              {this.state.viewSolution[q.id] && (
+                                <p className="solution-p">
+                                  <TextDisplay text={q.solution}></TextDisplay>
+                                </p>
+                              )}
+                            </div>
+                          )}
                           <p>
                             Last Edit was at{" "}
                             {q.lastUpdated && q.lastUpdated.toDate().toString()}{" "}
@@ -657,7 +768,7 @@ class DBQuestions extends React.Component {
                   </ul>
                   <button
                     className="more-events"
-                    onClick={this.getNextQuestions}
+                    onClick={() => this.getNextQuestions(false)}
                     style={{ margin: "5vh 0px" }}
                   >
                     <i className="fas fa-plus-circle"></i>
@@ -665,8 +776,8 @@ class DBQuestions extends React.Component {
                   </button>
                 </div>
               ) : (
-                <div>
-                  <h4>Select How to Sort By</h4>
+                <div id="query-popup-lobby">
+                  <h4 className="query-h4">Select How to Sort By</h4>
                   <select
                     value={this.state.inputSortField}
                     onChange={this.changeState}
@@ -691,6 +802,10 @@ class DBQuestions extends React.Component {
               )}
             </div>
           </div>
+        )}
+
+        {this.state.showClipboardNotice && (
+          <div className="clipboard-notice">Copied to Clipboard!</div>
         )}
       </div>
     );

@@ -1,12 +1,13 @@
 import React from "react";
 import { pFirestore, pFunctions } from "../../services/config";
-import ReactHtmlParser, {
-  processNodes,
-  convertNodeToElement,
-  htmlparser2,
-} from "react-html-parser";
+// import ReactHtmlParser, {
+//   processNodes,
+//   convertNodeToElement,
+//   htmlparser2,
+// } from "react-html-parser";
 import { Redirect } from "react-router-dom";
 import Loading from "../Loading";
+import TextDisplay from "../TextDisplay";
 
 //NOTE: this is the component for both Live Questions and Feedback
 
@@ -315,10 +316,9 @@ class LiveQuestions extends React.Component {
                           </div>
                           <div className="col-2">
                             <div className="q-text">
-                              {q.text &&
-                                ReactHtmlParser(
-                                  q.text.replaceAll("[&&linebreak]", "<br/>")
-                                )}
+                              {q.text && (
+                                <TextDisplay text={q.text}></TextDisplay>
+                              )}
                             </div>
                             <ul className="q-images">
                               {q.imageURLs &&

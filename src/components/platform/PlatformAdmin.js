@@ -23,6 +23,10 @@ class PlatformAdmin extends React.Component {
       forgiveId: "",
       forgiveAnswer: "",
       instructionsText: "",
+
+      disconnectDBPopup: false,
+      acceptAdminRequestPopup: false,
+      userToAccept: "",
     };
   }
 
@@ -308,6 +312,46 @@ class PlatformAdmin extends React.Component {
       });
   };
 
+  //uses the "userToAccept" property in state as the userId
+  acceptAdminRequest = async () => {
+    this.setState({ isLoading: true, acceptAdminRequestPopup: false });
+    try {
+      var acceptAdminRequest = pFunctions.httpsCallable("acceptAdminRequest");
+      var res = await acceptAdminRequest({
+        platformId: this.context.platform,
+        userId: this.state.userToAccept,
+      });
+      if (res.data.isError) {
+        console.log(res.data);
+        this.setState({ isError: true, isLoading: false });
+      } else {
+        this.setState({ isError: false, isLoading: false });
+      }
+    } catch (e) {
+      this.setState({ isError: true, isLoading: false });
+    }
+  };
+
+  rejectAdminRequest = async (userId) => {
+    console.log("REJECTING", userId);
+    this.setState({ isLoading: true });
+    try {
+      var rejectAdminRequest = pFunctions.httpsCallable("rejectAdminRequest");
+      var res = await rejectAdminRequest({
+        platformId: this.context.platform,
+        userId: userId,
+      });
+      if (res.data.isError) {
+        console.log(res.data);
+        this.setState({ isError: true, isLaoding: false });
+      } else {
+        this.setState({ isError: false, isLoading: false });
+      }
+    } catch (e) {
+      this.setState({ isError: true, isLaoding: false });
+    }
+  };
+
   render() {
     return (
       <div id="platformAdmin">
@@ -336,10 +380,46 @@ class PlatformAdmin extends React.Component {
             name="description"
           ></textarea>
           <h3>Admins</h3>
-          <ul className="platformAdmin-innerList">
+          <ul className="platformAdmin-innerList admins">
             {this.state.admins &&
               this.state.admins.map((a) => {
-                return <li>{this.context.usersMapping[a]}</li>;
+                return (
+                  <li>
+                    <i className="fas fa-user-cog"></i>
+                    {this.context.usersMapping[a]}
+                  </li>
+                );
+              })}
+          </ul>
+          {this.state.adminRequests && this.state.adminRequests.length > 0 && (
+            <h4 className="admin-request-text">Admin Requests:</h4>
+          )}
+          <ul className="platformAdmin-innerList admins requests">
+            {this.state.adminRequests &&
+              this.state.adminRequests.map((a) => {
+                return (
+                  <li>
+                    <i className="fas fa-user"></i>
+                    {this.context.usersMapping[a]}
+                    <button
+                      className="accept-button"
+                      onClick={() =>
+                        this.setState({
+                          userToAccept: a,
+                          acceptAdminRequestPopup: true,
+                        })
+                      }
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="reject-button"
+                      onClick={() => this.rejectAdminRequest(a)}
+                    >
+                      Reject
+                    </button>
+                  </li>
+                );
               })}
           </ul>
           <h3>Databases</h3>
@@ -536,6 +616,10 @@ class PlatformAdmin extends React.Component {
           >
             Perform a Forgive
           </button>
+          <div>
+            <h3>Deleting a Platform</h3>
+            <p>Please contact the Aspyere Team to get a platform deleted.</p>
+          </div>
         </div>
 
         {this.state.showConnectDB && (
@@ -629,13 +713,13 @@ class PlatformAdmin extends React.Component {
           </div>
         )}
 
-        {!this.state.showAddGroupOption && this.state.isLoading && (
-          <Loading isPopup={true} />
-        )}
+        {!this.state.showAddGroupOption &&
+          !this.state.showConnectDB &&
+          this.state.isLoading && <Loading isPopup={true} />}
 
-        {!this.state.showAddGroupOption && this.state.isLoading && (
-          <Loading isPopup={true} />
-        )}
+        {!this.state.showAddGroupOption &&
+          !this.state.showConnectDB &&
+          this.state.isLoading && <Loading isPopup={true} />}
 
         {!this.state.showAddGroupOption &&
           !this.state.showConnectDB &&
@@ -653,6 +737,31 @@ class PlatformAdmin extends React.Component {
               </div>
             </div>
           )}
+
+        {this.state.acceptAdminRequestPopup && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <h4>
+                Are you sure you want to make this user an admin? This action
+                CANNOT be undone.
+              </h4>
+              <button
+                className="submit-button"
+                onClick={this.acceptAdminRequest}
+              >
+                Accept Request
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() =>
+                  this.setState({ acceptAdminRequestPopup: false })
+                }
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {this.state.showAddGroupOption && (
           <div className="grayed-out-background">
