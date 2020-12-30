@@ -1,5 +1,5 @@
 import React from "react";
-import { Redirect } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import { pFirestore, pAuth, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
 import Loading from "../Loading";
@@ -61,7 +61,7 @@ class DBList extends React.Component {
   selectDB = (e) => {
     const id = e.target.name;
     if (!id) return this.selectDB({ target: e.target.parentElement });
-    console.log(id);
+
     this.context.setCurrentDB(id);
     this.setState({ redirect: "/dbdashboard?db=" + id });
   };
@@ -114,7 +114,7 @@ class DBList extends React.Component {
         }
       })
       .catch((e) => {
-        console.log(e, "error");
+        console.error(e, "error");
         this.setState({ isLoading: false });
       });
   };
@@ -123,13 +123,35 @@ class DBList extends React.Component {
     if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
       <div id="dbList-container">
-        <h2>All Databases</h2>
-        <button
-          onClick={() => this.setState({ showCreate: true })}
-          className="create-button"
-        >
-          Create a Database<div className="plus fas fa-plus-circle"></div>
-        </button>
+        <div className="jumbotron database">
+          <div className="jumbotron-content">
+            <h2>Databases</h2>
+            <p>The place to store your data</p>
+            <div id="platformList-searchBar"></div>
+
+            <Link to="/docs" className="learn-more-tab arrow-button">
+              Learn More <span>{">>>"}</span>
+            </Link>
+            <button
+              onClick={() => this.setState({ showCreate: true })}
+              className="create-button"
+            >
+              Create a Database<div className="plus fas fa-plus-circle"></div>
+            </button>
+          </div>
+        </div>
+        <div id="db-subJumbotron">
+          <h3>
+            AspyereBase Databases <i className="fas fa-database"></i>
+          </h3>
+          <p>
+            Store all your question data in your own AspyereBase Database, and
+            connect it easily to any platform you like. Administer your database
+            with flexible settings and user management, controlling who can view
+            and edit your database.
+          </p>
+        </div>
+
         <ul id="db-list">{this.renderDBs()}</ul>
         {this.state.showCreate && (
           <div className="grayed-out-background">

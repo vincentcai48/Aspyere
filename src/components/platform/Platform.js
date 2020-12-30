@@ -94,6 +94,18 @@ class Platform extends React.Component {
     } catch (e) {
       this.setState({ doesNotExist: true, isLoadingPlatform: false });
     }
+
+    //increment the view count of this platform
+    try {
+      if (this.context.platform) {
+        var incrementPlatformViews = pFunctions.httpsCallable(
+          "incrementPlatformViews"
+        );
+        await incrementPlatformViews({ platformId: this.context.platform });
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   //returns true or false if the user is in the platform or not
@@ -187,7 +199,7 @@ class Platform extends React.Component {
       fieldName: fieldName,
     })
       .then(() => {})
-      .catch((e) => console.log(e));
+      .catch((e) => console.error(e));
   };
 
   //only for Group Admin.
@@ -269,7 +281,7 @@ class Platform extends React.Component {
           this.setState({ privateSettings: doc.data() });
         });
     } catch (e) {
-      console.log(e, "Not admin");
+      console.error(e, "Not admin");
     }
   };
 
@@ -301,7 +313,6 @@ class Platform extends React.Component {
       .doc(groupId)
       .get()
       .then(async (doc) => {
-        console.log(groupId);
         if (!doc.exists) this.setState({ isGroupNotExist: true });
         this.setState({
           groupData: { ...doc.data(), id: doc.id },
@@ -314,7 +325,6 @@ class Platform extends React.Component {
               ? 1
               : 2,
         });
-        console.log(groupId);
 
         //then get private group settings (group join code etc...)
         await pFirestore
@@ -324,13 +334,11 @@ class Platform extends React.Component {
           .doc(groupId)
           .get()
           .then((pgs) => {
-            console.log(pgs.exists);
             if (pgs.exists) {
-              console.log(pgs.data());
               this.setState({ privateGroupSettings: pgs.data() });
             }
           })
-          .catch((e) => console.log(e));
+          .catch((e) => console.error(e));
       })
       .catch((e) => {
         //if the group NO Longer exists
@@ -508,7 +516,6 @@ class Platform extends React.Component {
       });
       this.setState({ showOptions: false });
       if (res.data.isError) {
-        console.log(res.data);
       }
     } catch (e) {
       console.error(e);

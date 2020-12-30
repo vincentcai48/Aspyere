@@ -70,7 +70,7 @@ class DBQuestions extends React.Component {
 
   uploadFile = async (e) => {
     //Step 1: get the file and set isUploading to true
-    console.log(e.target.files[0]);
+
     var file = e.target.files[0];
     this.setState({ isUploading: true });
     var parentThis = this; //need to use "this" in a nested function
@@ -102,15 +102,14 @@ class DBQuestions extends React.Component {
           var arr = [...this.state.imageURLs];
           result.ref.getDownloadURL().then((url) => {
             arr.push(url);
-            console.log(url);
-            console.log(arr);
+
             this.setState({ imageURLs: arr });
           });
           this.setState({ isUploading: false });
-          console.log(result.bytesTransferred / result.totalBytes);
+          //console.log(result.bytesTransferred / result.totalBytes);
         });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       this.setState({ isUploading: false });
     }
   };
@@ -120,7 +119,6 @@ class DBQuestions extends React.Component {
     var arr = this.state.tags;
     arr.push(this.state.tagInput);
     this.setState({ tags: arr, tagInput: "" });
-    console.log(this.props.parentState.dbQuestions);
   };
 
   deleteTag = (e) => {
@@ -218,7 +216,6 @@ class DBQuestions extends React.Component {
       .doc(this.state.questionToDelete)
       .delete()
       .then(() => {
-        console.log("Deleted");
         this.setState({
           questionToDelete: null,
           questionEditing: null,
@@ -272,15 +269,12 @@ class DBQuestions extends React.Component {
       .orderBy(sortField, this.state.isAsc ? "asc" : "desc");
     if (!this.state.lastDocAllQuestions) return;
     if (this.state.lastDocAllQuestions === -1 || isRefresh) {
-      console.log(this.state.lastDocAllQuestions === -1);
-      console.log(isRefresh);
       query = query.limit(newLimit);
     } else {
-      console.log("Starting After");
       query = query.startAfter(this.state.lastDocAllQuestions).limit(newLimit);
     }
     var questions = await query.get();
-    console.log("LENGTH:" + questions.docs.length);
+
     var arr = isRefresh ? [] : [...this.state.queryQuestions];
     questions.docs.forEach((q) => {
       arr.push({ ...q.data(), id: q.id });
@@ -295,7 +289,7 @@ class DBQuestions extends React.Component {
     this.setState((p) => {
       var viewSolution = { ...p.viewSolution };
       viewSolution[questionId] = !Boolean(p.viewSolution[questionId]);
-      console.log(viewSolution);
+
       return { viewSolution: viewSolution };
     });
   };
@@ -314,12 +308,7 @@ class DBQuestions extends React.Component {
 
   render() {
     if (!pAuth.currentUser) return <Auth />;
-    if (
-      this.state.lastDocAllQuestions &&
-      this.state.lastDocAllQuestions.exists
-    ) {
-      console.log(this.state.lastDocAllQuestions.data());
-    }
+
     return (
       <div id="dbquestions-container">
         {/* <div id="first-row">

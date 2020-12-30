@@ -23,7 +23,7 @@ class Auth extends React.Component {
   login = () => {
     pAuth.signInWithPopup(googleAuthProvider).then((result) => {
       const user = result.user;
-      console.log("Success");
+
       pFirestore
         .collection("users")
         .doc(user.uid)

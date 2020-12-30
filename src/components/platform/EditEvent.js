@@ -98,7 +98,7 @@ class EditEvent extends React.Component {
         this.props.closeFunction();
       })
       .catch((e) => {
-        console.log(e);
+        console.error(e);
         this.setState({ isLoading: false, isError: true });
       });
   };
@@ -209,9 +209,9 @@ class EditEvent extends React.Component {
   deleteQuestion = () => {
     this.setState((p) => {
       var qs = [...p.questions];
-      console.log(qs);
+
       qs.splice(p.questionToEdit, 1);
-      console.log(qs);
+
       this.discardQuestionSettings();
       return {
         questions: qs,
@@ -221,11 +221,9 @@ class EditEvent extends React.Component {
 
   //the button has a "name" attribute that is the index in the "questions" array
   editEvent = (e) => {
-    console.log(e.target.name);
     var index = Number(e.target.name);
     this.setState((prevState) => {
       var questionData = { ...prevState.questions[index] };
-      console.log(prevState.questions);
 
       return {
         showQuestionSettings: true,
@@ -261,7 +259,6 @@ class EditEvent extends React.Component {
   };
 
   render() {
-    //console.log(this.state);
     var count = 0;
     return (
       <div className="grayed-out-background">

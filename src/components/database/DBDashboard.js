@@ -65,7 +65,6 @@ class DBDashboard extends React.Component {
       });
     pAuth.onAuthStateChanged((user) => {
       if (user) {
-        console.log(user.uid, pAuth.currentUser.uid);
         this.setDBandUserData();
       }
       // if(user.id){ this.setDBandUserData();
@@ -77,7 +76,7 @@ class DBDashboard extends React.Component {
   setDBandUserData = () => {
     var dbId = this.getURLParams();
     this.setState({ dbId: dbId });
-    console.log(pAuth.currentUser);
+
     //Get the privateSettings too
     try {
       pFirestore
@@ -93,7 +92,6 @@ class DBDashboard extends React.Component {
     }
     //only when the auth state loads.
     if (pAuth.currentUser) {
-      console.log(pAuth.currentUser.uid);
       this.setState({ accessLevel: 0 });
       //get the public settings
       try {
@@ -136,22 +134,20 @@ class DBDashboard extends React.Component {
                 .collection("questions")
                 .orderBy("lastUpdated", "desc")
                 .onSnapshot((questions) => {
-                  console.log(questions);
                   var qs = [];
                   questions.forEach((q) => {
                     qs.push({ ...q.data(), id: q.id });
-                    console.log(q.data());
                   });
                   this.setState({ dbQuestions: qs });
                 });
             },
             (error) => {
-              console.log(error);
+              console.error(error);
             }
           );
       } catch (e) {
         //if the snapshot doesn't work because of security rules OR because url is wrong and database doesn't exist with that id.
-        console.log("FAIL");
+        console.error(e);
         this.setState({ accessLevel: 0 });
       }
     }
@@ -284,7 +280,6 @@ class DBDashboard extends React.Component {
       dbId: this.state.dbId,
       memberCodeTry: this.state.memberCodeTry,
     }).then((res) => {
-      console.log(res.data);
       if (res.data) {
         this.setState({ tempDenyAccess: false });
       } else {
@@ -345,7 +340,6 @@ class DBDashboard extends React.Component {
   };
 
   render() {
-    console.log(this.state.dbQuestions);
     if (!pAuth.currentUser) return <Auth />;
     return (
       <div id="dbdashboard-main">

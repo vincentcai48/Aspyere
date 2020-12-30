@@ -109,7 +109,7 @@ class GroupAdmin extends React.Component {
       str = "Today";
     } else {
       now.setTime(now.getTime() - 24 * 60 * 60 * 1000);
-      console.log(now);
+
       if (
         now.getFullYear() == year &&
         now.getMonth() == month &&
@@ -317,16 +317,14 @@ class GroupAdmin extends React.Component {
       .doc(userId)
       .collection(groupId)
       .orderBy("timeSubmitted", "desc");
-    console.log(isRefresh, this.state.lastDocCompletedEvents);
+
     var eventsList;
     if (!this.state.lastDocCompletedEvents) {
-      console.log("NO MORE DOCS");
       return;
     }
     if (this.state.lastDocCompletedEvents === -1 || isRefresh) {
       eventsList = await query.limit(this.props.limit).get();
     } else {
-      console.log("PAGINATION!!");
       eventsList = await query
         .startAfter(this.state.lastDocCompletedEvents)
         .limit(this.props.limit)
@@ -334,13 +332,13 @@ class GroupAdmin extends React.Component {
     }
     this.setState((prevState) => {
       var arr = isRefresh ? [] : [...prevState.completedEvents];
-      console.log(eventsList.docs);
+
       eventsList.docs.forEach((e) => {
         var newObj = { ...e.data() };
         newObj.timeSubmitted = e.data().timeSubmitted.toDate();
         arr.push({ ...newObj, id: e.id });
       });
-      console.log(arr, eventsList.docs[eventsList.docs.length - 1]);
+
       return {
         completedEvents: [...arr],
         lastDocCompletedEvents: eventsList.docs[eventsList.docs.length - 1],
@@ -349,10 +347,6 @@ class GroupAdmin extends React.Component {
   };
 
   render() {
-    console.log(
-      this.state.inputJoinCode,
-      this.props.privateGroupSettings.joinCode
-    );
     return (
       <div id="groupAdmin-container">
         <section id="recent-activity">

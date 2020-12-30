@@ -1,6 +1,8 @@
 import React from "react";
 import { pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
+import pJumbo1 from "../../images/pJumbo1.jpg";
+import { Link } from "react-router-dom";
 
 //allPlatforms are in context, but only get filled out when
 class PlatformList extends React.Component {
@@ -24,12 +26,10 @@ class PlatformList extends React.Component {
           arr.push({ ...p.data(), id: p.id });
         });
         this.context.setAllPlatforms(arr);
-        console.log(arr);
       });
   }
 
   joinPlatform = (id) => {
-    console.log(id);
     if (
       this.context.rootUserData.platform &&
       this.context.rootUserData.allPlatforms &&
@@ -55,64 +55,148 @@ class PlatformList extends React.Component {
     })
       .then((res) => {
         this.context.setIsLoading(false);
-        console.log(res.data);
       })
       .catch((e) => {
-        console.log(e);
+        console.error(e);
         this.context.setIsLoading(false);
       });
-  };
-
-  forgive = () => {
-    var forgive = pFunctions.httpsCallable("forgive");
   };
 
   render() {
     return (
       <div id="platformList-container">
-        <h2>Plaforms</h2>
-        <p>
-          Aspyere Platforms are the best way to host live quiz rounds online.
-          Choose an existing platform or create one yourself
-        </p>
-        <div id="platformList-searchBar"></div>
-        <button
-          onClick={() => this.setState({ showCreate: true })}
-          className="create-button"
+        <div
+          className="jumbotron platform"
+          style={{ backgroundImage: pJumbo1 }}
         >
-          Create a New Platform
-          <i className="plus fas fa-plus-circle"></i>
-        </button>
+          <div className="jumbotron-content">
+            <h2>Platforms</h2>
+            <p>The central piece of Aspyere, where great things happen</p>
+            <div id="platformList-searchBar"></div>
+            <Link to="/docs" className="learn-more-tab arrow-button">
+              Learn More <span>{">>>"}</span>
+            </Link>
+            <button
+              onClick={() => this.setState({ showCreate: true })}
+              className="create-button"
+            >
+              Create a New Platform
+              <i className="plus fas fa-plus-circle"></i>
+            </button>
+          </div>
+        </div>
+
+        <ul id="featured-platformList">
+          <h3>Featured Platforms</h3>
+          {this.context.appSettings &&
+            this.context.appSettings.featuredPlatforms &&
+            this.context.appSettings.featuredPlatforms.map((pId) => {
+              if (!this.context.allPlatforms) return;
+              var p = this.context.allPlatforms.filter((pl) => pl.id == pId)[0];
+              if (!p) return;
+              return (
+                <li className="single-platform" key={p.id}>
+                  <div>
+                    {p.iconURL ? (
+                      <img src={p.iconURL} className="p-Icon-inList"></img>
+                    ) : (
+                      <div className="p-Icon-inList"></div>
+                    )}
+                  </div>
+                  <div>
+                    <h3>{p.name}</h3>
+                    <p>
+                      {p.description && p.description.length > 120
+                        ? p.description.substr(0, 120) + "..."
+                        : p.description}
+                    </p>
+                    <div className="platform-Views">
+                      {p.views}
+                      <i className="far fa-eye"></i>
+                    </div>
+                    {/* <div className="platform-id">ID: {p.id}</div> */}
+                    {p.id != this.context.rootUserData.platform ? (
+                      <button
+                        className="join-button"
+                        onClick={() => {
+                          this.joinPlatform(p.id);
+                        }}
+                      >
+                        Join this Platform
+                      </button>
+                    ) : (
+                      <button
+                        className="bb"
+                        style={{ display: "block" }}
+                        onClick={() => {
+                          this.context.setPlatform(
+                            this.context.rootUserData.platform
+                          );
+                        }}
+                      >
+                        Joined
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+        </ul>
+
         <ul id="platformList-ul">
+          <h3>All Platforms</h3>
           {this.context.allPlatforms.map((p) => {
             if (!p.name && !p.description) return;
+            if (
+              this.context.appSettings &&
+              this.context.appSettings.featuredPlatforms &&
+              this.context.appSettings.featuredPlatforms.includes(p.id)
+            )
+              return;
             return (
               <li className="single-platform" key={p.id}>
-                <h3>{p.name}</h3>
-                <p>{p.description}</p>
-                <div className="platform-id">ID: {p.id}</div>
-                {p.id != this.context.rootUserData.platform ? (
-                  <button
-                    className="join-button"
-                    onClick={() => {
-                      this.joinPlatform(p.id);
-                    }}
-                  >
-                    Join
-                  </button>
-                ) : (
-                  <button
-                    className="bb"
-                    style={{ display: "block" }}
-                    onClick={() => {
-                      this.context.setPlatform(
-                        this.context.rootUserData.platform
-                      );
-                    }}
-                  >
-                    Joined
-                  </button>
-                )}
+                <div>
+                  {p.iconURL ? (
+                    <img src={p.iconURL} className="p-Icon-inList"></img>
+                  ) : (
+                    <div className="p-Icon-inList"></div>
+                  )}
+                </div>
+                <div>
+                  <h3>{p.name}</h3>
+                  <p>
+                    {p.description && p.description.length > 120
+                      ? p.description.substr(0, 120) + "..."
+                      : p.description}
+                  </p>
+                  <div className="platform-Views">
+                    {p.views}
+                    <i className="far fa-eye"></i>
+                  </div>
+                  {/* <div className="platform-id">ID: {p.id}</div> */}
+                  {p.id != this.context.rootUserData.platform ? (
+                    <button
+                      className="join-button"
+                      onClick={() => {
+                        this.joinPlatform(p.id);
+                      }}
+                    >
+                      Join this Platform
+                    </button>
+                  ) : (
+                    <button
+                      className="bb"
+                      style={{ display: "block" }}
+                      onClick={() => {
+                        this.context.setPlatform(
+                          this.context.rootUserData.platform
+                        );
+                      }}
+                    >
+                      Joined
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}

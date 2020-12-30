@@ -35,7 +35,6 @@ class PlatformAdmin extends React.Component {
       ...this.props.platformSettings,
       ...this.props.privateSettings,
     });
-    console.log(this.state);
   }
 
   componentDidUpdate(prevProps) {
@@ -44,7 +43,6 @@ class PlatformAdmin extends React.Component {
         ...this.props.platformSettings,
         ...this.props.privateSettings,
       });
-      console.log(this.state);
     }
   }
 
@@ -69,7 +67,6 @@ class PlatformAdmin extends React.Component {
         !settingsToIgnore.includes(setting)
       )
         newSettingsChanged.push(setting);
-      console.log(newSettingsChanged);
 
       return { settingsChanged: newSettingsChanged };
     });
@@ -85,12 +82,7 @@ class PlatformAdmin extends React.Component {
     var updatePlatformSettings = pFunctions.httpsCallable(
       "updatePlatformSettings"
     );
-    console.log({
-      platformId: this.context.platform,
-      updates: {
-        groupOptions: newGroupOptions,
-      },
-    });
+
     updatePlatformSettings({
       platformId: this.context.platform,
       updates: {
@@ -124,7 +116,7 @@ class PlatformAdmin extends React.Component {
     var updatePlatformSettings = pFunctions.httpsCallable(
       "updatePlatformSettings"
     );
-    console.log(newGroupOptions);
+
     updatePlatformSettings({
       platformId: this.context.platform,
       updates: {
@@ -134,7 +126,7 @@ class PlatformAdmin extends React.Component {
       .then(() => this.setState({ isLoading: false }))
       .catch((e) => {
         this.setState({ isError: true, isLoading: false });
-        console.log(e);
+        console.error(e);
       });
   };
 
@@ -150,20 +142,14 @@ class PlatformAdmin extends React.Component {
         updates[setting] = this.state[setting];
       }
     });
-    console.log(updates);
-    console.log(privateSettingsUpdates);
+
     //if no properties, set to null, so that the Cloud Function will know not to update any private settings in the database
     if (Object.keys(privateSettingsUpdates).length == 0)
       privateSettingsUpdates = null;
-    console.log(privateSettingsUpdates);
+
     var updatePlatformSettings = pFunctions.httpsCallable(
       "updatePlatformSettings"
     );
-    console.log({
-      platformId: this.context.platform,
-      updates: updates,
-      privateSettingsUpdates: privateSettingsUpdates,
-    });
     updatePlatformSettings({
       platformId: this.context.platform,
       updates: updates,
@@ -178,10 +164,6 @@ class PlatformAdmin extends React.Component {
     var connectDatabaseToPlatform = pFunctions.httpsCallable(
       "connectDatabaseToPlatform"
     );
-    console.log({
-      platformId: this.context.platform,
-      dbId: this.state.dbToConnect,
-    });
     connectDatabaseToPlatform({
       platformId: this.context.platform,
       dbId: this.state.dbToConnect,
@@ -290,7 +272,7 @@ class PlatformAdmin extends React.Component {
 
   forgive = async () => {
     this.setState({ forgivePopup: false, isLoading: true });
-    console.log(this.state.forgiveId, this.state.forgiveAnswer);
+
     var forgive = pFunctions.httpsCallable("forgive");
     forgive({
       platformId: this.context.platform,
@@ -300,15 +282,13 @@ class PlatformAdmin extends React.Component {
       .then((res) => {
         if (res.data.isError) {
           this.setState({ isError: true, isLoading: false });
-          console.log(res.data);
         } else {
           this.setState({ isLoading: false });
-          console.log(res.data);
         }
       })
       .catch((e) => {
         this.setState({ isError: true, isLoading: false });
-        console.log(e);
+        console.error(e);
       });
   };
 
@@ -322,7 +302,6 @@ class PlatformAdmin extends React.Component {
         userId: this.state.userToAccept,
       });
       if (res.data.isError) {
-        console.log(res.data);
         this.setState({ isError: true, isLoading: false });
       } else {
         this.setState({ isError: false, isLoading: false });
@@ -333,7 +312,6 @@ class PlatformAdmin extends React.Component {
   };
 
   rejectAdminRequest = async (userId) => {
-    console.log("REJECTING", userId);
     this.setState({ isLoading: true });
     try {
       var rejectAdminRequest = pFunctions.httpsCallable("rejectAdminRequest");
@@ -342,7 +320,6 @@ class PlatformAdmin extends React.Component {
         userId: userId,
       });
       if (res.data.isError) {
-        console.log(res.data);
         this.setState({ isError: true, isLaoding: false });
       } else {
         this.setState({ isError: false, isLoading: false });

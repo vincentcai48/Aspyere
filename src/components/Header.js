@@ -28,7 +28,7 @@ class Header extends React.Component {
   login = () => {
     pAuth.signInWithPopup(googleAuthProvider).then((result) => {
       const user = result.user;
-      console.log("Success");
+
       pFirestore
         .collection("users")
         .doc(user.uid)
@@ -52,9 +52,13 @@ class Header extends React.Component {
         <div className="header-s1">
           <Link className="react-link" to="/">
             <h1 id="title-h1">
-              {this.context.platformName || "Aspyere"}
-              {this.context.platformName && (
-                <div id="h1-onAspyere">on&nbsp;Aspyere</div>
+              {!this.context.platformName || !this.context.platform ? (
+                "Aspyere"
+              ) : (
+                <div>
+                  {this.context.platformName}
+                  <div id="h1-onAspyere">on&nbsp;Aspyere</div>
+                </div>
               )}
             </h1>
           </Link>

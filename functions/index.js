@@ -35,34 +35,13 @@ function setCredentialsForBilling() {
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
-exports.helloWorld = functions.https.onRequest(async (request, response) => {
-  functions.logger.info("Hello logs!", { structuredData: true });
-  await db
-    .collection("users")
-    .doc("jWC5XTCceKeU9fiCMdfMqq7YbCH3")
-    .update({
-      platform: "platformId",
-      recentPlatforms: admin.firestore.FieldValue.arrayUnion({
-        platform: "platformId",
-        time: admin.firestore.FieldValue.serverTimestamp(),
-      }),
-    });
-  response.send("Hello from Firebase!");
-});
-
-//data: Object {platformId: , tryAccessCode:  }
-// exports.joinPlatform = functions.https.onCall((data,context)=>{
-//     db.collection("platforms").doc(data.plaformId).get().then((doc)=>{
-//         doc.data()
-//     })
-// })
 
 exports.receiveBillingNotice = functions.pubsub
   .topic("billing")
   .onPublish(async (message) => {
     const data = message.json;
-    /*IMPORTANT: AMOUNT TO KILL PROJECT IS $200 */
-    const killingProjectAmount = 200;
+    /*IMPORTANT: AMOUNT TO KILL PROJECT IS $100 */
+    const killingProjectAmount = 100;
     const cost = data.costAmount;
     console.log("COST: " + cost);
     if (cost && cost >= killingProjectAmount) {
@@ -82,7 +61,7 @@ async function billingKillSwitch() {
         name: PROJECT_NAME,
         requestBody: { billingAccountName: "" },
       });
-      console.log(
+      console.error(
         `URGENT!!! DISABLED BILLING FOR ${PROJECT_NAME} AUTOMATICALLY DUE TO COST EXCEEDING LIMITATIONS`
       );
       console.log(JSON.stringify(result));
@@ -175,6 +154,24 @@ exports.joinPlatform = functions.https.onCall(async (data, context) => {
 });
 //return true if success, false if error
 
+//data: {platformId: }
+exports.incrementPlatformViews = functions.https.onCall(
+  async (data, context) => {
+    if (!context.auth.uid) return false;
+    try {
+      await db
+        .collection("platforms")
+        .doc(data.platformId)
+        .update({
+          views: admin.firestore.FieldValue.increment(1),
+        });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+);
+
 //data: {name: , description: , displayName: ,}
 exports.createDB = functions.https.onCall(async (data, context) => {
   try {
@@ -260,7 +257,7 @@ exports.copyDBQuestions = functions.https.onCall(async (data, context) => {
     await Promise.all(promises);
     return { isError: false };
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return { isError: true, errorType: 3 };
   }
 });
@@ -395,7 +392,7 @@ exports.createGroup = functions.https.onCall(async (data, context) => {
       }
     }
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return false;
   }
 });
@@ -455,7 +452,7 @@ async function createGroupInDB(platformId, groupSettings, userId) {
     await joinGroupInDB(userId, platformId, newGroup.id, false);
     return true;
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return false;
   }
 }
@@ -749,22 +746,18 @@ exports.promoteGroupUser = functions.https.onCall(async (data, context) => {
 //data: Object {platformId: , updates: Object(), privateSettingsUpdates: Object() or null if none}
 exports.updatePlatformSettings = functions.https.onCall(
   async (data, context) => {
-    console.log(data, context.auth.uid);
     await db
       .collection("platforms")
       .doc(data.platformId)
       .get()
       .then((doc) => {
-        console.log(doc.data());
-        console.log(doc.data().admins);
-        console.log(context.auth.uid, data.platformId, data.updates);
         if (doc.data().admins && doc.data().admins.includes(context.auth.uid)) {
           //Update public settings if there are settings to update
           if (data.updates && Object.keys(data.updates).length > 0) {
             db.collection("platforms")
               .doc(data.platformId)
               .update(data.updates)
-              .catch((e) => console.log(e));
+              .catch((e) => console.error(e));
           }
 
           //Update private settings only if you need to.
@@ -777,7 +770,7 @@ exports.updatePlatformSettings = functions.https.onCall(
               .collection("privateSettings")
               .doc("privateSettings")
               .update(data.privateSettingsUpdates)
-              .catch((e) => console.log(e));
+              .catch((e) => console.error(e));
           }
         } else {
           console.log("not an admin");
@@ -800,7 +793,7 @@ exports.sendPlatformAdminRequest = functions.https.onCall(
         });
       return { isError: false };
     } catch (e) {
-      console.log(e);
+      console.error(e);
       return { isError: true };
     }
   }
@@ -821,7 +814,7 @@ exports.acceptAdminRequest = functions.https.onCall(async (data, context) => {
       });
     return { isError: false };
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return { isError: true };
   }
 });
@@ -839,7 +832,7 @@ exports.rejectAdminRequest = functions.https.onCall(async (data, context) => {
       });
     return { isError: false };
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return { isError: true };
   }
 });
@@ -900,11 +893,11 @@ exports.updateEvent = functions.https.onCall(async (data, context) => {
     updates.startTime = admin.firestore.Timestamp.fromDate(
       new Date(Number(updates.startTime))
     );
-    // console.log(updates);
+
     updates.endTime = admin.firestore.Timestamp.fromDate(
       new Date(Number(updates.endTime))
     );
-    // console.log(updates);
+
     if (data.eventId) {
       //edit an existing event
       await db
@@ -1049,7 +1042,6 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
       .doc(userRecords.groupId)
       .get();
     if (groupDoc.exists) {
-      console.log("Difficulty One: " + groupDoc.data().difficulty);
       difficulty = Number(groupDoc.data().difficulty);
     }
   }
@@ -1157,13 +1149,6 @@ async function generateQuestionFromDB(
   const limit = 10; //Change this if needed, but limit to 10 for now.
   const randomNum = hashToNumber(userId); //keep this random number constant, so question id and the question match, just mod this random number accordingly.
 
-  console.log(
-    "Question: Offset:" +
-      question.difficultyOffset +
-      " Range: " +
-      question.difficultyRange
-  );
-
   //Step 5: Get the database id, generate if random.
   var dbId = question.databaseId;
   if (!dbId) dbId = await getRandomDB(platformId, userId); //here this is if the inputed db is undefined, then get a random DB
@@ -1190,24 +1175,16 @@ async function generateQuestionFromDB(
 
   //Step 6: Get the possible question options
   difficulty = Number(difficulty);
-  console.log("Difficulty Original: " + difficulty);
+
   difficulty += Number(question.difficultyOffset);
-  console.log(
-    "Difficulty after offset of " +
-      question.difficultyOffset +
-      " : " +
-      difficulty
-  );
-  console.log("difficulty range: " + question.difficultyRange);
+
   var diffLower = difficulty - Math.abs(Number(question.difficultyRange));
   var diffUpper = difficulty + Math.abs(Number(question.difficultyRange));
   var questionOptions;
   //Step 6.1: First pass through. Strictly in the range, and containing the tags, if any
   if (question.tags && question.tags.length < 1) {
     //if No tags, query only within range.
-    console.log(
-      "Stage One: NO TAGS - Lower: " + diffLower + " Upper: " + diffUpper
-    );
+
     questionOptions = await db
       .collection("databases")
       .doc(dbId)
@@ -1220,14 +1197,7 @@ async function generateQuestionFromDB(
     //if there are tags, query with tags. Firestore only allows array-contains-any queries of 10 elements max.
 
     var tags = question.tags.slice(0, 10);
-    console.log(
-      "Stage One: Yes Tags: " +
-        tags.toString() +
-        " - Lower: " +
-        diffLower +
-        " Upper: " +
-        diffUpper
-    );
+
     questionOptions = await db
       .collection("databases")
       .doc(dbId)
@@ -1251,9 +1221,7 @@ async function generateQuestionFromDB(
     //Step 6.2: Second pass through, if array is empty. Query without tags, and double the range.
     diffLower -= Math.abs(Number(question.difficultyRange));
     diffUpper += Math.abs(Number(question.difficultyRange));
-    console.log(
-      "Stage Two: No more tags - Lower: " + diffLower + " Upper: " + diffUpper
-    );
+
     questionOptions = await db
       .collection("databases")
       .doc(dbId)
@@ -1274,13 +1242,7 @@ async function generateQuestionFromDB(
       };
     } else {
       //Step 6.3: Third Pass through, no restrictions, any question in the database is fair game.
-      console.log(
-        "Stage Three: Nothing between Lower: " +
-          diffLower +
-          " and Upper: " +
-          diffUpper +
-          ", so entire DB is queried"
-      );
+
       questionOptions = await db
         .collection("databases")
         .doc(dbId)
@@ -1518,7 +1480,6 @@ exports.forgive = functions.https.onCall(async (data, context) => {
           var questions = [...docData.questions];
           questions = questions.map((q) => {
             if (q.questionId == data.questionId && !q.isCorrect) {
-              console.log("FORGIVING!!!", q.questionId, eventDoc.id);
               q.acceptedAnswers = [...q.acceptedAnswers, data.forgiveAnswer];
               if (String(q.answer).toLowerCase() == forgiveAnswer) {
                 pointsToAdd += Number(q.points);

@@ -147,7 +147,6 @@ class DBAdmin extends React.Component {
       dbId: this.props.parentState.dbId,
     })
       .then((res) => {
-        console.log(res);
         this.setState({ isNotSaved: false, isLoading: false });
       })
       .catch((e) => {
@@ -219,7 +218,6 @@ class DBAdmin extends React.Component {
   };
 
   deleteDB = async () => {
-    console.log("DELETING", this.props.parentState.dbId);
     this.setState({ isLoading: true });
     var deleteDB = pFunctions.httpsCallable("deleteDB");
     try {
@@ -234,7 +232,6 @@ class DBAdmin extends React.Component {
   };
 
   copyQuestions = async () => {
-    console.log("COPYING QUESTIONS!");
     this.setState({ isLoading: true });
     try {
       var copyDBQuestions = pFunctions.httpsCallable("copyDBQuestions");
@@ -242,7 +239,7 @@ class DBAdmin extends React.Component {
         fromDBId: this.props.parentState.dbId,
         toDBId: this.state.dbToCopy,
       });
-      console.log(res.data);
+
       if (res.data.isError) {
         this.setState({
           copyQuestionsError: res.data.errorType,
@@ -258,7 +255,6 @@ class DBAdmin extends React.Component {
   };
 
   render() {
-    console.log(this.props.parentState);
     if (!pAuth.currentUser) return <Auth />;
     return (
       <div>

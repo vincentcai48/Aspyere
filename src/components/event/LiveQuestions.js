@@ -91,7 +91,6 @@ class LiveQuestions extends React.Component {
       eventId: eventId,
     })
       .then((data) => {
-        console.log(data);
         if (data.data.isError) {
           this.setState({
             isError: true,
@@ -113,7 +112,7 @@ class LiveQuestions extends React.Component {
         }
       })
       .catch((e) => {
-        console.log("ERROR", e);
+        console.error(e);
         this.setState({ isLoading: false, errorType: -1, isError: true });
       });
   };
@@ -165,7 +164,6 @@ class LiveQuestions extends React.Component {
   };
 
   changeAnswerArrayState = (e) => {
-    console.log(e.target);
     const { name, value } = e.target;
     this.setState((prevState) => {
       var newAnswers = [...prevState.answers];
@@ -183,9 +181,7 @@ class LiveQuestions extends React.Component {
       answers: this.state.answers,
     })
       .then((r) => {
-        console.log(r);
         if (r.data.isError) {
-          console.log(r);
           this.setState({
             showSubmitPopup: false,
             isSubmitError: true,
@@ -198,7 +194,7 @@ class LiveQuestions extends React.Component {
         }
       })
       .catch((e) => {
-        console.log(e);
+        console.error(e);
         this.setState({
           showSubmitPopup: false,
           isSubmitError: true,
@@ -210,7 +206,6 @@ class LiveQuestions extends React.Component {
 
   render() {
     var num = 0;
-    console.log(this.state.errorType);
     if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
       <div>

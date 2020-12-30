@@ -61,7 +61,6 @@ class EventsList extends React.Component {
     var nowTime = fbTimestamp.fromDate(new Date());
     var comparison = isPast ? "<" : ">=";
     var asDs = isPast ? "desc" : "asc";
-    console.log(comparison);
     pFirestore
       .collection("platforms")
       .doc(this.context.platform)
@@ -214,10 +213,7 @@ class EventsList extends React.Component {
               this.state.allCountdowns[num] &&
               this.state.allCountdowns[num] < duration * -1000;
             if (isOver && !this.state.isPast) return;
-            // if (isCompleted && !this.state.isPast) {
-            //   // console.log(e.id + "completed already");
-            //   return;
-            // }
+
             return (
               <li
                 key={e.id}

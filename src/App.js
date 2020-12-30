@@ -13,6 +13,8 @@ import LiveQuestions from "./components/event/LiveQuestions.js";
 import Auth from "./components/Auth.js";
 import Loading from "./components/Loading.js";
 import "katex/dist/katex.min.css";
+import Contact from "./components/Contact.js";
+import Docs from "./components/docs/Docs.js";
 
 class App extends React.Component {
   constructor() {
@@ -38,6 +40,7 @@ class App extends React.Component {
       setAllPlatforms: (a) => this.setState({ allPlatforms: a }),
       joinPlatform: this.joinPlatform,
       isMobile: false,
+      appSettings: {},
     };
   }
 
@@ -58,7 +61,6 @@ class App extends React.Component {
             .doc(user.uid)
             .onSnapshot((doc) => {
               if (doc.exists && doc.data()) {
-                console.log(doc.data());
                 this.state.setPlatform(doc.data().platform);
                 this.setState({ rootUserData: doc.data() });
               }
@@ -92,13 +94,21 @@ class App extends React.Component {
         keys.forEach((userId) => {
           usersMap[userId] = dataObj[userId]["displayName"];
         });
-        console.log(usersMap);
+
         this.setState({ usersMapping: usersMap });
+      });
+
+    //get settings, like the featured platforms:
+    pFirestore
+      .collection("settings")
+      .doc("settings")
+      .get()
+      .then((doc) => {
+        this.setState({ appSettings: doc.data() });
       });
   }
 
   joinPlatform = async (platformId) => {
-    console.log(platformId);
     this.setState({ isLoading: true });
     var joinPlatformFirebase = pFunctions.httpsCallable("joinPlatform");
     await joinPlatformFirebase({ platformId: platformId })
@@ -113,12 +123,11 @@ class App extends React.Component {
       })
       .catch((e) => {
         this.setState({ isLoading: false });
-        console.log(e);
+        console.error(e);
       });
   };
 
   render() {
-    console.log(this.state.loadingStage1, this.state.loadingStage2);
     return (
       <PContext.Provider value={this.state}>
         <div className="App">
@@ -147,6 +156,9 @@ class App extends React.Component {
                       </Route>
                       <Route path="/account">
                         <Account />
+                      </Route>
+                      <Route path="/docs">
+                        <Docs />
                       </Route>
                     </div>
                   ) : (

@@ -40,7 +40,6 @@ class LobbyPlatform extends React.Component {
         });
         this.setState({ groupsList: arr });
       });
-    console.log(this.context.usersMapping);
   }
 
   //can also set "isPulbic" to true if you are rejoining the group, to bypass entering the code.
@@ -84,7 +83,6 @@ class LobbyPlatform extends React.Component {
         tryJoinCode: this.state.accessCodeTry,
       });
       if (res.data.isError) {
-        console.log("Error");
         this.setState({ showAccessError: true, isLoading: false }); //Note: this will just show it is an error, won't actually show what type of error.
       } else {
         await this.props.checkJoinedStatus(this.props.requireGroup);
@@ -129,7 +127,6 @@ class LobbyPlatform extends React.Component {
       },
     })
       .then((res) => {
-        console.log(res);
         this.setState({
           isLoading: false,
           isCreateError: !res.data,
@@ -145,8 +142,6 @@ class LobbyPlatform extends React.Component {
   };
 
   render() {
-    console.log(this.state.selectedGroupOption);
-
     return (
       <div>
         <section

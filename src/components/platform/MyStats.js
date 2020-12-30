@@ -31,7 +31,6 @@ class MyStats extends React.Component {
   };
 
   render() {
-    console.log(this.props.userData, this.props.completedEvents);
     var d = this.props.userData;
     var isNoStats = false;
     var weeks = d.startTime

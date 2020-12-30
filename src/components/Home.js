@@ -26,14 +26,14 @@ class Home extends React.Component {
     this.setState({
       prevIsShowPlatformPopup: this.context.isShowPlatformPopup,
     });
-    console.log("GETTING PLATFORMS");
+
     if (this.context.rootUserData && this.context.rootUserData.allPlatforms) {
       this.context.rootUserData.allPlatforms.forEach(async (pId) => {
         var withSameId = this.context.allPlatforms.filter((p) => p.id == pId);
         if (withSameId.length > 0) return;
         else {
           var newP = await pFirestore.collection("platforms").doc(pId).get();
-          console.log(newP.data());
+
           this.context.setAllPlatforms([
             ...this.context.allPlatforms,
             { ...newP.data(), id: newP.id },
@@ -44,7 +44,6 @@ class Home extends React.Component {
   };
 
   render() {
-    console.log(this.context.platform, this.context.allPlatforms);
     if (
       this.state.prevIsShowPlatformPopup != this.context.isShowPlatformPopup
     ) {
@@ -66,14 +65,24 @@ class Home extends React.Component {
               <div className="grayed-out-background">
                 <div className="popup platformPopup">
                   <div className="first-row">
-                    <h4 style={{ fontSize: "24px" }}>Platforms</h4>
+                    <h4>Platforms</h4>
+
                     <button
-                      className="cancel-button x-out"
+                      className="x-out-platforms"
                       onClick={() => this.context.setIsShowPlatformPopup(false)}
                     >
                       Close
                     </button>
                   </div>
+                  <button
+                    className="enp arrow-button"
+                    onClick={() => {
+                      this.context.setPlatform(null);
+                      this.context.setIsShowPlatformPopup(false);
+                    }}
+                  >
+                    Explore New Platforms <span>{">>>"}</span>
+                  </button>
                   <ul id="user-allPlatforms">
                     {this.context.rootUserData &&
                       this.context.rootUserData.allPlatforms &&
@@ -81,7 +90,7 @@ class Home extends React.Component {
                         var platforms = this.context.allPlatforms.filter(
                           (pl) => pl.id == p
                         );
-                        console.log(platforms);
+
                         if (!platforms[0]) return "";
                         var pData = platforms[0];
                         if (!pData.name && !pData.description) return "";
@@ -116,15 +125,6 @@ class Home extends React.Component {
                         );
                       })}
                   </ul>
-                  <button
-                    className="sb enp"
-                    onClick={() => {
-                      this.context.setPlatform(null);
-                      this.context.setIsShowPlatformPopup(false);
-                    }}
-                  >
-                    Explore New Platforms
-                  </button>
                 </div>
               </div>
             )}

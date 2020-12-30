@@ -529,19 +529,45 @@ button:focus {
 }
 
 #dbList-container {
-  width: 90vw;
+  width: 100%;
   margin: auto;
-  margin-bottom: 30vh;
+  padding-bottom: 30vh;
 }
 
 #dbList-container h2 {
-  font-size: 36px;
+  /* font-size: 36px; */
   font-weight: bolder;
+}
+
+#db-subJumbotron {
+  background-color: black;
+  color: white;
+  width: 100%;
+  padding: 10vh 5%;
+  box-sizing: border-box;
+}
+
+#db-subJumbotron h3 {
+  font-size: 50px;
+  margin: 0px;
+  font-style: italic;
+}
+
+#db-subJumbotron h3 .fas.fa-database {
+  margin-left: 10px;
+}
+
+#db-subJumbotron p {
+  width: 80%;
+  margin-left: 20px;
+  font-size: 18px;
 }
 
 ul#db-list {
   list-style: none;
   padding: 0px;
+  width: 90%;
+  margin: 10vh auto 30vh auto;
 }
 
 li.db-single {
@@ -1056,25 +1082,111 @@ p.solution-p {
 }
 
 #platformList-container {
-  width: 90vw;
+  width: 100%;
   box-sizing: border-box;
   margin: auto;
 }
 
-#platformList-container > h2 {
-  font-size: 2.3em;
-  margin-bottom: 0px;
+.jumbotron {
+  position: relative;
+  min-height: 60vh;
 }
 
-#platformList-container > p {
-  margin-bottom: 30px;
+.jumbotron.platform {
+  /* --pc: #003688;
+  --sc: #ff6b00; */
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+    url(./images/pJumbo1_1_64.jpg) no-repeat;
+  background-size: cover;
+}
+
+.jumbotron.database {
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+    url(./images/dbJumbo1_50.jpeg) no-repeat;
+  background-size: cover;
+}
+
+.jumbotron-content {
+  color: white;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10vh 4vw;
+}
+
+.jumbotron-content h2 {
+  font-size: 60px;
+  font-weight: bold;
+  margin: 0px;
+}
+
+.jumbotron-content p {
+  font-size: 16px;
+  margin: 10px 0px;
+}
+
+.jumbotron-content > .learn-more-tab {
+  padding: 5px 30px 5px 30px;
+  background-color: var(--sc);
+  color: white;
+  text-decoration: none;
+  border-top-right-radius: 15px;
+  border-bottom-right-radius: 15px;
+  position: absolute;
+  left: 0;
+  transform: translateY(20px);
+  font-size: 18px;
+  font-weight: 100;
+}
+
+.jumbotron-content .create-button {
+  position: absolute;
+  right: 20px;
+  bottom: 40px;
+  box-shadow: 1px 1px 1px black;
+}
+
+#featured-platformList {
+  padding: 5vh 5vw;
+  box-sizing: border-box;
+  width: 100%;
+  background-color: var(--pc);
+  color: white;
+  margin-top: 0px;
+}
+
+#featured-platformList > h3 {
+  font-size: 30px;
+  margin: 0px 0px 50px 0px;
+}
+
+#platformList-ul {
+  width: 90%;
+  margin: 30px auto 30vh auto;
+}
+
+#platformList-ul > h3 {
+  font-size: 30px;
+  margin: 50px 0px;
 }
 
 .single-platform {
-  padding: 20px;
+  padding: 50px 30px;
+  border-radius: 15px;
+  box-shadow: 3px 3px 5px rgb(73, 73, 73);
+  margin: 30px 0px;
+  max-width: 800px;
+  display: flex;
+  align-items: center;
+  color: black;
+  background-color: white;
+}
+
+.p-Icon-inList {
+  height: 100px;
+  width: 100px;
   border-radius: 10px;
-  box-shadow: 3px 3px 5px var(--pc);
-  margin: 20px 0px;
+  background-color: grey;
+  margin: 0px 40px 0px 0px;
 }
 
 .single-platform h3 {
@@ -1096,13 +1208,22 @@ p.solution-p {
   display: inline-block;
 }
 
+.platform-Views {
+  font-weight: bold;
+  margin: 0px 0px 10px 10px;
+}
+
+.platform-Views i {
+  margin-left: 5px;
+}
+
 .join-button {
   display: block;
   color: white;
   border: 2.5px solid var(--sc);
-  padding: 5px 10px;
-  font-weight: bolder;
-  font-size: 18px;
+  padding: 3px 10px;
+  font-weight: bold;
+  font-size: 16px;
   border-radius: 5px;
   background-color: var(--sc);
   transition: all 0.3s;
@@ -1111,6 +1232,16 @@ p.solution-p {
 .join-button:hover {
   background-color: white;
   color: var(--sc);
+}
+
+#featured-platformList .join-button {
+  background-color: black;
+  border-color: black;
+}
+
+#featured-platformList .join-button:hover {
+  color: black;
+  background-color: white;
 }
 
 #platform-container {
@@ -2688,9 +2819,36 @@ input[name="topicInput"] {
   text-shadow: 1px 1px 2px black;
 }
 
+.platformPopup {
+  padding: 40px 20px;
+  position: relative;
+}
+
 .platformPopup .first-row {
   display: flex;
   align-items: center;
+}
+
+.platformPopup .first-row h4 {
+  margin: 0px;
+  font-size: 36px;
+}
+
+.x-out-platforms {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  border: 3px solid red;
+  background-color: red;
+  color: white;
+  font-weight: bold;
+  transition: all 0.3s;
+  border-radius: 5px;
+}
+
+.x-out-platforms:hover {
+  background-color: white;
+  color: red;
 }
 
 .single-myPlatform {
@@ -3158,7 +3316,12 @@ button.more-events:hover {
 }
 
 .enp {
-  margin: 30px 0px 20px 0px;
+  margin: 10px 0px;
+  background-color: transparent;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: grey;
 }
 
 .db-single .db-single-button {
@@ -3203,6 +3366,23 @@ button.more-events:hover {
 p.num-qs {
   font-weight: bold;
   margin: 30px 0px 0px 0px;
+}
+
+#contact-info {
+  max-width: 700px;
+}
+
+#contact-info h2 {
+  font-size: 40px;
+  font-weight: bolder;
+  font-style: italic;
+  margin: 20px 0px;
+}
+
+#contact-info p {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0px 10px;
 }
 
 footer {
@@ -3499,5 +3679,13 @@ footer {
   .single-question .first-line-q h6 {
     margin: 0;
     font-size: 16px;
+  }
+
+  .single-platform {
+    display: block;
+  }
+
+  .single-platform .p-Icon-inList {
+    display: none;
   }
 }
