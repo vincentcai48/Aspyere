@@ -46,6 +46,8 @@ class DBQuestions extends React.Component {
       isAsc: false,
       lastDocAllQuestions: -1,
       queryQuestions: [],
+
+      showTeXInstructions: false,
     };
   }
 
@@ -205,6 +207,7 @@ class DBQuestions extends React.Component {
       isAddPopup: true,
       questionEditing: questionObj.id,
       solution: questionObj.solution,
+      showTeXInstructions: false,
     });
   };
 
@@ -366,7 +369,7 @@ class DBQuestions extends React.Component {
                         className="edit-button"
                         onClick={() => this.prepareEdit(q)}
                       >
-                        Edit <i class="fas fa-edit"></i>
+                        Edit <i className="fas fa-edit"></i>
                       </button>
                     </div>
                   </div>
@@ -375,7 +378,7 @@ class DBQuestions extends React.Component {
                     {q.imageURLs &&
                       q.imageURLs.map((img) => {
                         return (
-                          <li>
+                          <li key={img}>
                             <img src={img}></img>
                           </li>
                         );
@@ -384,7 +387,7 @@ class DBQuestions extends React.Component {
                   <ul className="tags-q">
                     {q.tags &&
                       q.tags.map((tag) => {
-                        return <li>{tag}</li>;
+                        return <li key={tag}>{tag}</li>;
                       })}
                   </ul>
                   <div className="answers-q">
@@ -428,7 +431,39 @@ class DBQuestions extends React.Component {
                     ? `Edit Question ID: ${this.state.questionEditing}`
                     : "Add a Question to the Database"}
                 </h5>
-
+                <div>
+                  <div className="db-tex-instructions">
+                    <button
+                      className="ssb"
+                      onClick={() =>
+                        this.setState((p) => {
+                          return {
+                            showTeXInstructions: !p.showTeXInstructions,
+                          };
+                        })
+                      }
+                    >
+                      Write questions and solutions in{" "}
+                      <TextDisplay text={"$\\TeX$"}></TextDisplay>
+                    </button>
+                    {this.state.showTeXInstructions && (
+                      <p>
+                        Use the "$" (dollar sign) character to enclose
+                        <TextDisplay text={"$\\TeX$"}></TextDisplay> equations
+                        <br></br>
+                        <br></br>
+                        Example: {'"$\\frac{a}{b}$"'}{" "}
+                        <i className="fas fa-arrow-alt-circle-right"></i>{" "}
+                        <TextDisplay text={"$\\frac{a}{b}$"}></TextDisplay>
+                        <br></br>
+                        <p style={{ fontSize: "12px" }}>
+                          *Please note that multiline equations are not
+                          supported, create a separate equation per line.
+                        </p>
+                      </p>
+                    )}
+                  </div>
+                </div>
                 <textarea
                   id="edit-question-text"
                   name="questionText"
@@ -487,7 +522,7 @@ class DBQuestions extends React.Component {
                   <h4>Tags:</h4>
                   <ul id="add-q-tags-list">
                     {this.state.tags.map((t) => (
-                      <li>
+                      <li key={t}>
                         {t}
                         <button
                           className="x-out"
@@ -518,7 +553,7 @@ class DBQuestions extends React.Component {
                   <h4>Answers:</h4>
                   <ul id="add-q-answers-list">
                     {this.state.answers.map((a) => (
-                      <li>
+                      <li t={a}>
                         {a}
                         <button
                           className="x-out"
@@ -598,6 +633,7 @@ class DBQuestions extends React.Component {
               <div className="popup nsp">
                 <h3>No Editing Access</h3>
                 <button
+                  className="cancel-button"
                   onClick={() => {
                     this.setState({ isAddPopup: false });
                   }}
@@ -690,7 +726,13 @@ class DBQuestions extends React.Component {
                       return (
                         <li className="single-question" key={"query" + q.id}>
                           <hr></hr>
-                          <div className="id-q">ID: {q.id}</div>
+                          <div className="id-q">
+                            ID: {q.id}
+                            <button
+                              className="far fa-copy copy-qid"
+                              onClick={() => this.copyQid(q.id)}
+                            ></button>
+                          </div>
                           <div className="first-line-q">
                             <h6>
                               <TextDisplay text={q.text}></TextDisplay>
@@ -700,7 +742,7 @@ class DBQuestions extends React.Component {
                                 className="edit-button"
                                 onClick={() => this.prepareEdit(q)}
                               >
-                                Edit <i class="fas fa-edit"></i>
+                                Edit <i className="fas fa-edit"></i>
                               </button>
                             </div>
                           </div>
@@ -711,7 +753,7 @@ class DBQuestions extends React.Component {
                             {q.imageURLs &&
                               q.imageURLs.map((img) => {
                                 return (
-                                  <li>
+                                  <li key={img}>
                                     <img src={img}></img>
                                   </li>
                                 );
@@ -720,7 +762,7 @@ class DBQuestions extends React.Component {
                           <ul className="tags-q">
                             {q.tags &&
                               q.tags.map((tag) => {
-                                return <li>{tag}</li>;
+                                return <li key={tag}>{tag}</li>;
                               })}
                           </ul>
                           <div className="answers-q">

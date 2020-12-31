@@ -25,6 +25,7 @@ class PlatformAdmin extends React.Component {
       instructionsText: "",
 
       disconnectDBPopup: false,
+      dbToDisconnect: "",
       acceptAdminRequestPopup: false,
       userToAccept: "",
     };
@@ -188,14 +189,14 @@ class PlatformAdmin extends React.Component {
       });
   };
 
-  disconnectDB = (dbId) => {
-    this.setState({ isLoading: true });
+  disconnectDB = () => {
+    this.setState({ isLoading: true, disconnectDBPopup: false });
     var disconnectDatabaseToPlatform = pFunctions.httpsCallable(
       "disconnectDatabaseToPlatform"
     );
     disconnectDatabaseToPlatform({
       platformId: this.context.platform,
-      dbId: dbId,
+      dbId: this.state.dbToDisconnect,
     })
       .then(() => {
         this.setState({ isLoading: false });
@@ -411,13 +412,23 @@ class PlatformAdmin extends React.Component {
           <ul className="platformAdmin-innerList">
             {this.props.platformSettings.databases.map((db) => {
               return (
-                <li className="single-db-platformAdmin" key={db}>
-                  <i className="fas fa-database"></i>
-                  {this.props.dbMapping[db]}
-                  <button onClick={() => this.disconnectDB(db)}>
-                    Disconnect
-                  </button>
-                </li>
+                <div>
+                  <li className="single-db-platformAdmin" key={db}>
+                    <i className="fas fa-database"></i>
+                    {this.props.dbMapping[db]}
+                    <button
+                      onClick={() =>
+                        this.setState({
+                          dbToDisconnect: db,
+                          disconnectDBPopup: true,
+                        })
+                      }
+                    >
+                      Disconnect
+                    </button>
+                  </li>
+                  <br></br>
+                </div>
               );
             })}
           </ul>
@@ -733,6 +744,26 @@ class PlatformAdmin extends React.Component {
                 onClick={() =>
                   this.setState({ acceptAdminRequestPopup: false })
                 }
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {this.state.disconnectDBPopup && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <h4>
+                Are you sure you want to disconnect this database from this
+                platform?
+              </h4>
+              <button className="submit-button" onClick={this.disconnectDB}>
+                Disconnect
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() => this.setState({ disconnectDBPopup: false })}
               >
                 Cancel
               </button>

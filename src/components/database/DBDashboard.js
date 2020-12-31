@@ -147,7 +147,7 @@ class DBDashboard extends React.Component {
           );
       } catch (e) {
         //if the snapshot doesn't work because of security rules OR because url is wrong and database doesn't exist with that id.
-        console.error(e);
+        console.error(e, "Not Admin");
         this.setState({ accessLevel: 0 });
       }
     }
@@ -368,7 +368,7 @@ class DBDashboard extends React.Component {
             {this.state.accessLevel > 0 && !this.state.tempDenyAccess ? (
               <div>
                 {this.state.accessLevel <= 1 && (
-                  <div>
+                  <div id="no-editing-access">
                     <h3>No Editing Access</h3>
                     <input
                       onChange={this.changeState}

@@ -2836,7 +2836,7 @@ input[name="topicInput"] {
 
 .x-out-platforms {
   position: absolute;
-  top: 10px;
+  top: 15px;
   right: 20px;
   border: 3px solid red;
   background-color: red;
@@ -2844,6 +2844,7 @@ input[name="topicInput"] {
   font-weight: bold;
   transition: all 0.3s;
   border-radius: 5px;
+  padding: 3px 5px;
 }
 
 .x-out-platforms:hover {
@@ -2917,8 +2918,9 @@ input[name="topicInput"] {
 
 #first-row-lobby h2 {
   font-size: 36px;
-  color: white;
-  width: 100%;
+
+  color: black;
+  /* width: 100%;
   border-radius: 15px;
   background-color: black;
   padding: 15px 0px;
@@ -2926,7 +2928,7 @@ input[name="topicInput"] {
   margin-bottom: 30px;
   text-align: center;
   font-weight: bolder;
-  box-shadow: 2px 2px 3px grey;
+  box-shadow: 2px 2px 3px grey; */
 }
 
 #first-row-lobby .sb,
@@ -3383,6 +3385,63 @@ p.num-qs {
   font-size: 18px;
   font-weight: 600;
   margin: 0px 10px;
+}
+
+.joinPopup {
+  position: relative;
+}
+
+.joinPopup h3 {
+  margin: 10px 0px 3px 0px;
+  font-size: 30px;
+}
+
+.joinPopup p {
+  font-size: 14px;
+  color: grey;
+  margin: 0px 3px 20px 0px;
+}
+
+.joinPopup input {
+  margin-right: 7px;
+  margin-bottom: 15px;
+  max-width: 150px;
+  font-size: 18px;
+}
+
+.joinPopup .ssb {
+  top: 10px;
+  right: 10px;
+  position: absolute;
+}
+
+.joinPopup .access-error-text {
+  font-weight: bolder;
+  color: red;
+  margin-bottom: 10px;
+}
+
+#no-editing-access {
+  margin-bottom: 50px;
+}
+
+#completedEvents {
+  margin-bottom: 30vh;
+}
+
+.db-tex-instructions {
+  margin-top: 20px;
+}
+
+.db-tex-instructions > p {
+  font-size: 16px;
+  font-weight: 300;
+  padding: 20px 10px;
+  margin: 0px;
+}
+
+.db-tex-instructions > p > i {
+  margin: 6px;
 }
 
 footer {

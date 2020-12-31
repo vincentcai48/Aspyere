@@ -2,7 +2,7 @@ import { InlineMath, BlockMath } from "react-katex";
 
 //PROPS: String text (the question text to display)
 function TextDisplay(props) {
-  const escapeSequence = "*t&";
+  const escapeSequence = "$";
   //NOTE there are two types of escapes for a question, [&&linebreak] and *t&
 
   var str = String(props.text);

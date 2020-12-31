@@ -209,7 +209,7 @@ class DBAdmin extends React.Component {
         userId: userId,
       })
         .then(() => {
-          this.setState({ userToPromote: null, isLoading: true });
+          this.setState({ userToPromote: null, isLoading: false });
         })
         .catch((e) => {
           this.setState({ isLoading: false });

@@ -46,7 +46,11 @@ class LobbyPlatform extends React.Component {
   joinGroupProxy = (groupId, isPublic) => {
     if (isPublic) this.joinGroup(groupId);
     else {
-      this.setState({ groupToJoin: groupId });
+      this.setState({
+        groupToJoin: groupId,
+        accessCodeTry: "",
+        showAccessError: false,
+      });
     }
   };
 
@@ -54,7 +58,7 @@ class LobbyPlatform extends React.Component {
     if (groupId == "individual") {
       return this.joinIndividually();
     }
-    this.setState({ isLoading: true });
+    this.setState({ isLoading: true, showAccessError: false });
     var cloudJoinGroup = pFunctions.httpsCallable("joinGroup");
     try {
       var isValid = await cloudJoinGroup({
@@ -76,7 +80,7 @@ class LobbyPlatform extends React.Component {
 
   joinIndividually = async () => {
     try {
-      this.setState({ isLoading: true });
+      this.setState({ isLoading: true, showAccessError: false });
       var joinIndividually = pFunctions.httpsCallable("joinIndividually");
       var res = await joinIndividually({
         platformId: this.context.platform,
@@ -155,8 +159,8 @@ class LobbyPlatform extends React.Component {
             <button onClick={() => this.context.setPlatform(null)}>
               All Platforms
             </button>
-            <i class="fas fa-chevron-right"></i>
-            <i class="fas fa-home"></i>Platform Homepage
+            <i className="fas fa-chevron-right"></i>
+            <i className="fas fa-home"></i>Platform Homepage
           </span>
           <h2 id="lobbyHeader-name">{this.props.platformSettings.name}</h2>
         </section>
@@ -262,7 +266,7 @@ class LobbyPlatform extends React.Component {
                           <p>{g.description}</p>
                           <ul>
                             {g.admins.slice(0, 3).map((admin) => (
-                              <li className="single-admin">
+                              <li className="single-admin" key={admin}>
                                 <img className="person-icon" src={personIcon} />
                                 {this.context.usersMapping[admin]}
                               </li>
@@ -317,7 +321,7 @@ class LobbyPlatform extends React.Component {
                     <p>{g.description}</p>
                     <ul>
                       {g.admins.slice(0, 3).map((admin) => (
-                        <li className="single-admin">
+                        <li className="single-admin" key={admin}>
                           <img className="person-icon" src={personIcon} />
                           {this.context.usersMapping[admin]}
                         </li>
@@ -450,13 +454,15 @@ class LobbyPlatform extends React.Component {
 
           {this.state.groupToJoin && (
             <div className="grayed-out-background">
-              <div className="popup nsp">
+              <div className="popup nsp joinPopup">
                 <h3>Join with Code</h3>
+                <p>A code is required to join</p>
                 <input
                   value={this.state.accessCodeTry}
                   onChange={this.changeState}
                   placeholder="Join Code"
                   name="accessCodeTry"
+                  autoComplete="off"
                 ></input>
                 <button
                   className="sb"
@@ -474,10 +480,10 @@ class LobbyPlatform extends React.Component {
                   <div className="access-error-text">Access Error</div>
                 )}
                 <button
-                  className="cancel-button"
+                  className="ssb"
                   onClick={() => this.setState({ groupToJoin: null })}
                 >
-                  Cancel
+                  X
                 </button>
               </div>
             </div>

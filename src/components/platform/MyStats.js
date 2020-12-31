@@ -64,11 +64,13 @@ class MyStats extends React.Component {
           )}
           {d && d.totalEvents > 0 && (
             <section id="list-of-stats">
-              {d.totalPoints && (
+              {d.totalPoints && d.totalPoints > 0 ? (
                 <div className="single-stat">
                   <p>Total Points: </p>
                   <div className="col-3">{d.totalPoints}</div>
                 </div>
+              ) : (
+                ""
               )}
               {d.totalEvents && (
                 <div className="single-stat">
@@ -76,25 +78,29 @@ class MyStats extends React.Component {
                   <div className="col-3">{d.totalEvents}</div>
                 </div>
               )}
-              {d.totalPoints && weeks >= 1 && (
+              {d.totalPoints && d.totalPoints > 0 && weeks >= 1 ? (
                 <div className="single-stat">
                   <p>Points Per Week: </p>
                   <div className="col-3">
                     {(d.totalPoints / weeks).toFixed(2)}
                   </div>
                 </div>
+              ) : (
+                ""
               )}
 
-              {d.totalEvents && weeks >= 1 && (
+              {d.totalEvents && weeks >= 1 ? (
                 <div className="single-stat">
                   <p>Events Per Week: </p>
                   <div className="col-3">
                     {(d.totalEvents / weeks).toFixed(2)}
                   </div>
                 </div>
+              ) : (
+                ""
               )}
 
-              {d.totalPoints && d.totalPossiblePoints && (
+              {d.totalPoints && d.totalPossiblePoints ? (
                 <div className="single-stat">
                   <p>Average Accuracy:</p>
                   <div className="progress-bar">
@@ -124,6 +130,8 @@ class MyStats extends React.Component {
                     %
                   </div>
                 </div>
+              ) : (
+                ""
               )}
             </section>
           )}

@@ -95,7 +95,7 @@ class Home extends React.Component {
                         var pData = platforms[0];
                         if (!pData.name && !pData.description) return "";
                         return (
-                          <li className="single-myPlatform">
+                          <li className="single-myPlatform" key={pData.id}>
                             <div>
                               {this.context.rootUserData.platform == p ? (
                                 <div className="joined-text">Joined</div>

@@ -248,7 +248,7 @@ class EventsList extends React.Component {
                     <div className="completed-text">Completed Event</div>
                   ) : (
                     <div className="upcoming-text">
-                      <i class="fas fa-calendar-day"></i>{" "}
+                      <i className="fas fa-calendar-day"></i>{" "}
                       {this.state.isPast ? "Past" : "Upcoming"} Event
                     </div>
                   )}

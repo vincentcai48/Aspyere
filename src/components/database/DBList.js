@@ -70,7 +70,7 @@ class DBList extends React.Component {
     var arr = [];
     this.state.allDBs.forEach((db) => {
       arr.push(
-        <li className="db-single">
+        <li className="db-single" key={db.id}>
           <button
             className="db-single-button"
             onClick={this.selectDB}
