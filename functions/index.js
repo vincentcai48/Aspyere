@@ -1222,6 +1222,11 @@ async function generateQuestionFromDB(
     diffLower -= Math.abs(Number(question.difficultyRange));
     diffUpper += Math.abs(Number(question.difficultyRange));
 
+    if (Math.abs(Number(question.difficultyRange)) == 0) {
+      diffLower -= 2;
+      diffUpper += 2;
+    }
+
     questionOptions = await db
       .collection("databases")
       .doc(dbId)
