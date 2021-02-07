@@ -708,6 +708,22 @@ li.db-single .db-single-button {
   margin: 20px 0px;
 }
 
+#query-popup-lobby {
+  margin: -20px 0px 40px 0px;
+  padding: 15px 20px;
+  background-color: lightgrey;
+  border-radius: 10px;
+  box-shadow: 3px 3px 5px black;
+  display: flex;
+  align-items: center;
+}
+
+#query-popup-lobby h6 {
+  display: inline;
+  margin: 0px 20px 0px 0px;
+  font-size: 24px;
+}
+
 #query-popup-lobby select {
   border: 3px solid black;
   padding: 5px;
@@ -810,8 +826,14 @@ li.db-single .db-single-button {
 }
 
 #dbquestions-list {
-  width: 80vw;
   margin: auto;
+  box-sizing: border-box;
+  padding: 3vh 3vw;
+  border: 4px solid black;
+  border-radius: 10px;
+  box-shadow: 1px 1px 5px black;
+  margin-top: 5vh;
+  background-color: rgb(233, 240, 252);
 }
 
 ul#ul-dbquestions {

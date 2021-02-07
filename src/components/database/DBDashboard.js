@@ -417,13 +417,18 @@ class DBDashboard extends React.Component {
 
                 {this.state.menuOption == 0 ? (
                   <div>
-                    <DBAllQuestions />
+                    <DBQuestions
+                      parentState={this.state}
+                      changeParentState={(updates) => this.setState(updates)}
+                      isAllQuestions={true}
+                    />
                   </div>
                 ) : this.state.menuOption == 1 ? (
                   <div>
                     <DBQuestions
                       parentState={this.state}
                       changeParentState={(updates) => this.setState(updates)}
+                      isAllQuestions={false}
                     />
                   </div>
                 ) : (
