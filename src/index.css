@@ -653,7 +653,7 @@ li.db-single .db-single-button {
 }
 
 #db-dashboard-switch-menu {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
 }
 
 #dbquestions-container {

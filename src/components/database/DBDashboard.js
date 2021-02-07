@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import DBAdmin from "./DBAdmin";
 import DBQuestions from "./DBQuestions";
 import Loading from "../Loading";
+import DBAllQuestions from "./DBAllQuestions";
 
 class DBDashboard extends React.Component {
   constructor() {
@@ -389,14 +390,25 @@ class DBDashboard extends React.Component {
                     }}
                     className={this.state.menuOption == 0 ? "selected" : ""}
                   >
-                    <div>Questions</div>
+                    <div>All Questions</div>
                     <span></span>
                   </button>
+
                   <button
                     onClick={() => {
                       this.setState({ menuOption: 1 });
                     }}
                     className={this.state.menuOption == 1 ? "selected" : ""}
+                  >
+                    <div>Workspace</div>
+                    <span></span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      this.setState({ menuOption: 2 });
+                    }}
+                    className={this.state.menuOption == 2 ? "selected" : ""}
                   >
                     <div> Settings {"&"} Admin</div>
                     <span></span>
@@ -404,6 +416,10 @@ class DBDashboard extends React.Component {
                 </div>
 
                 {this.state.menuOption == 0 ? (
+                  <div>
+                    <DBAllQuestions />
+                  </div>
+                ) : this.state.menuOption == 1 ? (
                   <div>
                     <DBQuestions
                       parentState={this.state}
