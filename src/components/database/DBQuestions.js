@@ -11,8 +11,9 @@ import Auth from "../Auth";
 import { Link } from "react-router-dom";
 import imageCompression from "browser-image-compression";
 import TextDisplay from "../TextDisplay";
+import Loading from "../Loading";
 
-//PROPS: Object() parentState, Function() changeParentState
+//PROPS: Object() parentState, Function() changeParentState, Boolean isAllQuestions
 class DBQuestions extends React.Component {
   constructor() {
     super();
@@ -39,20 +40,28 @@ class DBQuestions extends React.Component {
       questionToDelete: null,
       showLimitPopup: false,
       showClipboardNotice: false,
-      //the all questions query popup
+      //the all questions query
       showAllQuestionsPopup: false,
       sortField: null,
       inputSortField: "lastUpdated",
       isAsc: false,
       lastDocAllQuestions: -1,
       queryQuestions: [],
+      isNeedUpdate: false, //when user switches the sort fields
+      isNeedRefresh: false, //when a question is edited in allQuestions
 
       showTeXInstructions: false,
+
+      isLoading: false,
     };
   }
 
   componentDidMount() {
     this.setLimit();
+    if (this.props.isAllQuestions) {
+      //get the questions automatically with default sort fields
+      this.getQueryQuestions();
+    }
   }
 
   componentDidUpdate(prevProps) {
@@ -155,6 +164,7 @@ class DBQuestions extends React.Component {
   };
 
   addQuestion = (questionId) => {
+    this.setState({ isLoading: true });
     pFirestore
       .collection("databases")
       .doc(this.props.parentState.dbId)
@@ -171,11 +181,16 @@ class DBQuestions extends React.Component {
         solution: this.state.solution
           ? this.state.solution.replace(/\n/g, "[&&linebreak]")
           : "",
+      })
+      .then(() => this.setState({ isNeedRefresh: true, isLoading: false }))
+      .catch(() => {
+        this.setState({ isLoading: false });
       });
     this.clearEditFields();
   };
 
   updateQuestion = (questionId) => {
+    this.setState({ isLoading: true });
     pFirestore
       .collection("databases")
       .doc(this.props.parentState.dbId)
@@ -192,6 +207,12 @@ class DBQuestions extends React.Component {
         solution: this.state.solution
           ? this.state.solution.replace(/\n/g, "[&&linebreak]")
           : "",
+      })
+      .then(() => {
+        this.setState({ isNeedRefresh: true, isLoading: false });
+      })
+      .catch(() => {
+        this.setState({ isLoading: false });
       });
     this.clearEditFields();
   };
@@ -212,6 +233,7 @@ class DBQuestions extends React.Component {
   };
 
   deleteQuestion = () => {
+    this.setState({ isLoading: true });
     pFirestore
       .collection("databases")
       .doc(this.props.parentState.dbId)
@@ -223,10 +245,13 @@ class DBQuestions extends React.Component {
           questionToDelete: null,
           questionEditing: null,
           isAddPopup: false,
+          isNeedRefresh: true,
+          loading: false,
         });
+        this.clearEditFields();
       })
       .catch((e) => {
-        this.setState({ questionToDelete: null });
+        this.setState({ questionToDelete: null, isLoading: false });
       });
   };
 
@@ -263,6 +288,7 @@ class DBQuestions extends React.Component {
   };
 
   getNextQuestions = async (isRefresh) => {
+    this.setState({ isLoading: true });
     var sortField = this.state.sortField || this.state.inputSortField;
     const newLimit = Math.round(this.props.parentState.limit / 2);
     var query = pFirestore
@@ -285,6 +311,7 @@ class DBQuestions extends React.Component {
     this.setState({
       queryQuestions: arr,
       lastDocAllQuestions: questions.docs[questions.docs.length - 1],
+      isLoading: false,
     });
   };
 
@@ -319,16 +346,75 @@ class DBQuestions extends React.Component {
         </div> */}
         <div id="first-row">
           <div className="groupAdmin-header">
-            <h3>Recent Questions Workspace</h3>
-            <p>Live updates to 20 most recent questions</p>
+            <h3>
+              {this.props.isAllQuestions
+                ? "All Questions"
+                : "Live Editing Workspace"}
+            </h3>
+            <p>
+              {this.props.isAllQuestions
+                ? "Listing of the questions in the database"
+                : "Live updates to 20 most recent questions"}
+            </p>
           </div>
-          <button
+          {/* <button
             className="query-questions-button"
             onClick={() => this.setState({ showAllQuestionsPopup: true })}
           >
             Query All Questions
-          </button>
+          </button> */}
         </div>
+
+        {this.props.isAllQuestions && this.state.isNeedRefresh && (
+          <div className="top-note red">
+            <div>Refresh to see changes</div>
+            <button
+              onClick={() => {
+                this.getQueryQuestions();
+                this.setState({ isNeedRefresh: false });
+              }}
+              style={{ marginLeft: "auto", fontSize: "20px" }}
+            >
+              Refresh
+            </button>
+          </div>
+        )}
+
+        {this.props.isAllQuestions && (
+          <div id="query-popup-lobby">
+            {/* <h4 className="query-h4">Select How to Sort By</h4> */}
+            <h6>Sort by: </h6>
+            <select
+              value={this.state.inputSortField}
+              onChange={(e) => {
+                this.changeState(e);
+                this.setState({ isNeedUpdate: true });
+              }}
+              name="inputSortField"
+            >
+              <option value="lastUpdated">Last Updated</option>
+
+              <option value="difficulty">Difficulty</option>
+            </select>
+            <select
+              value={this.state.isAsc}
+              onChange={(e) => {
+                this.changeState(e);
+                this.setState({ isNeedUpdate: true });
+              }}
+              name="isAsc"
+            >
+              <option value={true}>Ascending</option>
+              <option value={false}>Descending</option>
+            </select>
+            {this.state.isNeedUpdate && (
+              <button className="sb" onClick={this.getQueryQuestions}>
+                Query Questions
+              </button>
+            )}
+          </div>
+        )}
+
         {this.props.parentState.accessLevel >= 2 && (
           <button
             onClick={() => this.setState({ isAddPopup: true })}
@@ -347,80 +433,83 @@ class DBQuestions extends React.Component {
         )}
 
         {/**LIST OF RECENT QUESTIONS*/}
-        <section id="dbquestions-list">
-          <ul id="ul-dbquestions">
-            {this.props.parentState.dbQuestions.map((q) => {
-              return (
-                <li className="single-question" key={q.id}>
-                  <hr></hr>
-                  <div className="id-q">
-                    ID: {q.id}
-                    <button
-                      className="far fa-copy copy-qid"
-                      onClick={() => this.copyQid(q.id)}
-                    ></button>
-                  </div>
-                  <div className="first-line-q">
-                    <h6>
-                      <TextDisplay text={q.text}></TextDisplay>
-                    </h6>
-                    <div>
+        {!this.props.isAllQuestions && (
+          <section id="dbquestions-list">
+            <ul id="ul-dbquestions">
+              {this.props.parentState.dbQuestions.map((q) => {
+                return (
+                  <li className="single-question" key={q.id}>
+                    <hr></hr>
+                    <div className="id-q">
+                      ID: {q.id}
                       <button
-                        className="edit-button"
-                        onClick={() => this.prepareEdit(q)}
-                      >
-                        Edit <i className="fas fa-edit"></i>
-                      </button>
+                        className="far fa-copy copy-qid"
+                        onClick={() => this.copyQid(q.id)}
+                      ></button>
                     </div>
-                  </div>
-                  <div className="difficulty-q">Difficulty: {q.difficulty}</div>
-                  <ul className="images-q">
-                    {q.imageURLs &&
-                      q.imageURLs.map((img) => {
-                        return (
-                          <li key={img}>
-                            <img src={img}></img>
-                          </li>
-                        );
-                      })}
-                  </ul>
-                  <ul className="tags-q">
-                    {q.tags &&
-                      q.tags.map((tag) => {
-                        return <li key={tag}>{tag}</li>;
-                      })}
-                  </ul>
-                  <div className="answers-q">
-                    Answer{q.answers && q.answers.length != 1 && "s"}:{" "}
-                    {q.answers && q.answers.toString().replaceAll(",", ", ")}
-                  </div>
-                  {q.solution && (
-                    <div className="solution-q">
-                      <button
-                        className="ssb"
-                        onClick={() => this.toggleViewSolution(q.id)}
-                      >
-                        {this.state.viewSolution[q.id] ? "Hide" : "View"}{" "}
-                        Solution
-                      </button>
-                      {this.state.viewSolution[q.id] && (
-                        <p className="solution-p">
-                          <TextDisplay text={q.solution}></TextDisplay>
-                        </p>
-                      )}
+                    <div className="first-line-q">
+                      <h6>
+                        <TextDisplay text={q.text}></TextDisplay>
+                      </h6>
+                      <div>
+                        <button
+                          className="edit-button"
+                          onClick={() => this.prepareEdit(q)}
+                        >
+                          Edit <i className="fas fa-edit"></i>
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  <p>
-                    Last Edit was at{" "}
-                    {q.lastUpdated && q.lastUpdated.toDate().toString()} by{" "}
-                    {q.lastEditor}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
+                    <div className="difficulty-q">
+                      Difficulty: {q.difficulty}
+                    </div>
+                    <ul className="images-q">
+                      {q.imageURLs &&
+                        q.imageURLs.map((img) => {
+                          return (
+                            <li key={img}>
+                              <img src={img}></img>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                    <ul className="tags-q">
+                      {q.tags &&
+                        q.tags.map((tag) => {
+                          return <li key={tag}>{tag}</li>;
+                        })}
+                    </ul>
+                    <div className="answers-q">
+                      Answer{q.answers && q.answers.length != 1 && "s"}:{" "}
+                      {q.answers && q.answers.toString().replaceAll(",", ", ")}
+                    </div>
+                    {q.solution && (
+                      <div className="solution-q">
+                        <button
+                          className="ssb"
+                          onClick={() => this.toggleViewSolution(q.id)}
+                        >
+                          {this.state.viewSolution[q.id] ? "Hide" : "View"}{" "}
+                          Solution
+                        </button>
+                        {this.state.viewSolution[q.id] && (
+                          <p className="solution-p">
+                            <TextDisplay text={q.solution}></TextDisplay>
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <p>
+                      Last Edit was at{" "}
+                      {q.lastUpdated && q.lastUpdated.toDate().toString()} by{" "}
+                      {q.lastEditor}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
         {/***POPUP FOR ADDING/EDITING A QUESTION*/}
         {this.state.isAddPopup && (
           <div className="grayed-out-background add-q-gob">
@@ -692,151 +781,132 @@ class DBQuestions extends React.Component {
         )}
 
         {/* WHEN ALL QUESTIONS ARE QUERIED */}
-        {this.state.showAllQuestionsPopup && (
-          <div className="grayed-out-background">
-            <div className="popup allQs">
-              <button
+        {this.props.isAllQuestions && (
+          <div>
+            <div className="allQs">
+              {/* <button
                 onClick={() => this.setState({ showAllQuestionsPopup: false })}
                 className="cancel-button"
               >
                 Close
-              </button>
-              {this.state.sortField ? (
-                <div id="query-container">
-                  <div className="query-header">
-                    <h3>
-                      Query:{" "}
-                      {this.state.sortField == "lastUpdated"
-                        ? "Last Updated"
-                        : "Difficulty"}{" "}
-                      -{this.state.isAsc ? "Ascending" : "Descending"}
-                    </h3>
-                    <button
-                      className="sb"
-                      onClick={() =>
-                        this.setState({ sortField: null, queryQuestions: [] })
-                      }
-                    >
-                      New Query
-                    </button>
-                  </div>
+              </button> */}
 
-                  <ul id="ul-dbqueryquestions">
-                    {this.state.queryQuestions.map((q) => {
-                      return (
-                        <li className="single-question" key={"query" + q.id}>
-                          <hr></hr>
-                          <div className="id-q">
-                            ID: {q.id}
-                            <button
-                              className="far fa-copy copy-qid"
-                              onClick={() => this.copyQid(q.id)}
-                            ></button>
-                          </div>
-                          <div className="first-line-q">
-                            <h6>
-                              <TextDisplay text={q.text}></TextDisplay>
-                            </h6>
-                            <div>
-                              <button
-                                className="edit-button"
-                                onClick={() => this.prepareEdit(q)}
-                              >
-                                Edit <i className="fas fa-edit"></i>
-                              </button>
-                            </div>
-                          </div>
-                          <div className="difficulty-q">
-                            Difficulty: {q.difficulty}
-                          </div>
-                          <ul className="images-q">
-                            {q.imageURLs &&
-                              q.imageURLs.map((img) => {
-                                return (
-                                  <li key={img}>
-                                    <img src={img}></img>
-                                  </li>
-                                );
-                              })}
-                          </ul>
-                          <ul className="tags-q">
-                            {q.tags &&
-                              q.tags.map((tag) => {
-                                return <li key={tag}>{tag}</li>;
-                              })}
-                          </ul>
-                          <div className="answers-q">
-                            Answer{q.answers && q.answers.length != 1 && "s"}:{" "}
-                            {q.answers &&
-                              q.answers.toString().replaceAll(",", ", ")}
-                          </div>
-                          {q.solution && (
-                            <div className="solution-q">
-                              <button
-                                className="ssb"
-                                onClick={() => this.toggleViewSolution(q.id)}
-                              >
-                                {this.state.viewSolution[q.id]
-                                  ? "Hide"
-                                  : "View"}{" "}
-                                Solution
-                              </button>
-                              {this.state.viewSolution[q.id] && (
-                                <p className="solution-p">
-                                  <TextDisplay text={q.solution}></TextDisplay>
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          <p>
-                            Last Edit was at{" "}
-                            {q.lastUpdated && q.lastUpdated.toDate().toString()}{" "}
-                            by {q.lastEditor}
-                          </p>
-                        </li>
-                      );
-                    })}
-                  </ul>
+              <div id="query-container">
+                {/* <div className="query-header">
+                  <h3>
+                    Query:{" "}
+                    {this.state.sortField == "lastUpdated"
+                      ? "Last Updated"
+                      : "Difficulty"}{" "}
+                    -{this.state.isAsc ? "Ascending" : "Descending"}
+                  </h3>
                   <button
-                    className="more-events"
-                    onClick={() => this.getNextQuestions(false)}
-                    style={{ margin: "5vh 0px" }}
+                    className="sb"
+                    onClick={() =>
+                      this.setState({ sortField: null, queryQuestions: [] })
+                    }
                   >
-                    <i className="fas fa-plus-circle"></i>
-                    <span>Load More Questions</span>
+                    New Query
                   </button>
-                </div>
-              ) : (
-                <div id="query-popup-lobby">
-                  <h4 className="query-h4">Select How to Sort By</h4>
-                  <select
-                    value={this.state.inputSortField}
-                    onChange={this.changeState}
-                    name="inputSortField"
-                  >
-                    <option value="lastUpdated">Last Updated</option>
+                </div> */}
 
-                    <option value="difficulty">Difficulty</option>
-                  </select>
-                  <select
-                    value={this.state.isAsc}
-                    onChange={this.changeState}
-                    name="isAsc"
-                  >
-                    <option value={true}>Ascending</option>
-                    <option value={false}>Descending</option>
-                  </select>
-                  <button className="sb" onClick={this.getQueryQuestions}>
-                    Get Questions
-                  </button>
-                </div>
-              )}
+                <ul id="ul-dbqueryquestions">
+                  {this.state.queryQuestions.map((q) => {
+                    return (
+                      <li className="single-question" key={"query" + q.id}>
+                        <hr></hr>
+                        <div className="id-q">
+                          ID: {q.id}
+                          <button
+                            className="far fa-copy copy-qid"
+                            onClick={() => this.copyQid(q.id)}
+                          ></button>
+                        </div>
+                        <div className="first-line-q">
+                          <h6>
+                            <TextDisplay text={q.text}></TextDisplay>
+                          </h6>
+                          <div>
+                            <button
+                              className="edit-button"
+                              onClick={() => this.prepareEdit(q)}
+                            >
+                              Edit <i className="fas fa-edit"></i>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="difficulty-q">
+                          Difficulty: {q.difficulty}
+                        </div>
+                        <ul className="images-q">
+                          {q.imageURLs &&
+                            q.imageURLs.map((img) => {
+                              return (
+                                <li key={img}>
+                                  <img src={img}></img>
+                                </li>
+                              );
+                            })}
+                        </ul>
+                        <ul className="tags-q">
+                          {q.tags &&
+                            q.tags.map((tag) => {
+                              return <li key={tag}>{tag}</li>;
+                            })}
+                        </ul>
+                        <div className="answers-q">
+                          Answer{q.answers && q.answers.length != 1 && "s"}:{" "}
+                          {q.answers &&
+                            q.answers.toString().replaceAll(",", ", ")}
+                        </div>
+                        {q.solution && (
+                          <div className="solution-q">
+                            <button
+                              className="ssb"
+                              onClick={() => this.toggleViewSolution(q.id)}
+                            >
+                              {this.state.viewSolution[q.id] ? "Hide" : "View"}{" "}
+                              Solution
+                            </button>
+                            {this.state.viewSolution[q.id] && (
+                              <p className="solution-p">
+                                <TextDisplay text={q.solution}></TextDisplay>
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <p>
+                          Last Edit was at{" "}
+                          {q.lastUpdated && q.lastUpdated.toDate().toString()}{" "}
+                          by {q.lastEditor}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button
+                  className="more-events"
+                  onClick={() => this.getNextQuestions(false)}
+                  style={{ margin: "5vh 0px" }}
+                >
+                  <i className="fas fa-plus-circle"></i>
+                  <span>Load More Questions</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {this.state.showClipboardNotice && (
           <div className="clipboard-notice">Copied to Clipboard!</div>
+        )}
+
+        {this.state.isLoading && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <Loading />
+            </div>
+          </div>
         )}
       </div>
     );
