@@ -3392,6 +3392,18 @@ p.num-qs {
   margin: 30px 0px 0px 0px;
 }
 
+p.num-qs.sticky {
+  top: 10px;
+  position: sticky;
+  position: -webkit-sticky;
+  background-color: rgb(207, 207, 207);
+  padding: 5px 20px;
+  border-radius: 10px;
+  z-index: 20;
+  display: inline-block;
+  box-shadow: 1px 1px 3px black;
+}
+
 #contact-info {
   max-width: 700px;
 }

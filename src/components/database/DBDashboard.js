@@ -134,6 +134,7 @@ class DBDashboard extends React.Component {
                 .doc(this.state.dbId)
                 .collection("questions")
                 .orderBy("lastUpdated", "desc")
+                .limit(20)
                 .onSnapshot((questions) => {
                   var qs = [];
                   questions.forEach((q) => {

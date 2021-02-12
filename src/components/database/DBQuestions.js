@@ -424,12 +424,18 @@ class DBQuestions extends React.Component {
           </button>
         )}
 
-        {this.props.parentState.dbQuestions && (
-          <p className="num-qs">
-            {this.props.parentState.dbQuestions.length < 20
-              ? this.props.parentState.dbQuestions.length + " questions"
-              : "20 questions shown"}
+        {this.props.isAllQuestions ? (
+          <p className="num-qs sticky">
+            {this.state.queryQuestions.length + " questions"}
           </p>
+        ) : (
+          this.props.parentState.dbQuestions && (
+            <p className="num-qs">
+              {this.props.parentState.dbQuestions.length < 20
+                ? this.props.parentState.dbQuestions.length + " questions"
+                : "20 questions shown"}
+            </p>
+          )
         )}
 
         {/**LIST OF RECENT QUESTIONS*/}
