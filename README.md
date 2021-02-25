@@ -1,70 +1,21 @@
-# Getting Started with Create React App
+# Aspyere
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An online platform for live quiz rounds. 
 
-## Available Scripts
+## Usage
 
-In the project directory, you can run:
+Available online at https://aspyere.com/. Sign in with Google or an email. Join a platform and start competing in live quiz rounds right away.
 
-### `npm start`
+## Development and Data
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Aspyere is built with React and Firebase. Services used include Firebase Auth, Firebase Storage, Firebase Cloud Functions, and the Firebase Cloud Firestore database. This repository is an initialized Firebase project, and has all the config files for Firebase. Functions are included in the `/functions/index.js file`, and security rules for the Firestore database are in the `firebase.rules` file. 
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+The database is structured as a NoSQL document database that is sorted into collections and documents. Each collection is a group of documents, and each document contains data and may contain nested subcollections. At the root of the database, the `/databases` collection stores AspyereBase Databases, and each document in this collection has a `/questions` collection, with each document inside this collection containing data for that question. `/dbPrivateSettings` contains private information like access codes, stored in doucments with matching IDs to the `/databases` collection.
 
-### `npm test`
+The `/platforms` collection at the root, contains documents with root data about each platform. The `/users` subcollection within a platform document stores data about the user with ID correponding to the document ID, within the platform. This does not include any personal identification information, only information about the rounds completed, classes joined, last update seen, etc... (relating to that platform). Each subcollection inside a user document here has an ID of the corresponding group the user has joined within the platform, and has the document `userData` to store the user's statistics, shown on the "My Stats" page. The `/groups` subcollection of a platform document, contains public information about each group. The `/events` collection has documents with blueprints for how to generate event questions. The `/eventRecords` collection contains a copy of the questions generated for each user from the connected database. The `/privateSettings` collection has a document `privateSettings` with private settings about the platform, while other documents in this collection, whose IDs that correspond to the group IDs, contain private settings for each group. 
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+The `/users` collection in the root of the database contains information about the current state of the user, as well as user information. The two pieces of user information stored in this collection are the email and displayName of each user. Data also includes the current platform, as well as the joined platforms of the user.
 
-### `npm run build`
+## License
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Aspyere is MIT Licensed
