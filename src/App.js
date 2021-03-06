@@ -23,6 +23,7 @@ class App extends React.Component {
     this.state = {
       displayName: null,
       isLoading: false, //loading for joining a platform
+      isLoadingSite: true, //loading the initial page of the site (whatever that may be, the joined platforms, the platforms homepage, etc...)
       setIsLoading: (a) => this.setState({ isLoading: a }),
       userId: null,
       rootUserData: {},
@@ -33,8 +34,6 @@ class App extends React.Component {
       platformName: null,
       setPlatformName: (n) => this.setState({ platformName: n }),
       usersMapping: {},
-      loadingStage1: false, //getting the platform
-      setLoadingStage1: (a) => this.setState({ loadingStage1: a }),
       isShowPlatformPopup: false,
       setIsShowPlatformPopup: (a) => this.setState({ isShowPlatformPopup: a }),
       allPlatforms: [], //all platforms you need to store, includes platforms to show on homepage and also the users' joined platforms.
@@ -52,8 +51,7 @@ class App extends React.Component {
         this.setState({
           displayName: user.displayName,
           userId: user.uid,
-          loadingStage1: false,
-          loadingStage2: false,
+          isLoadingSite: true,
         });
         //get the user's current platform, auto set to that platform
         try {
@@ -63,22 +61,22 @@ class App extends React.Component {
             .onSnapshot((doc) => {
               if (doc.exists && doc.data()) {
                 this.state.setPlatform(doc.data().platform);
-                this.setState({ rootUserData: doc.data() });
+                this.setState({
+                  rootUserData: doc.data(),
+                  isLoadingSite: false,
+                });
               }
-              this.state.setLoadingStage1(true);
             });
         } catch (e) {
           this.state.setPlatform(null);
-          this.state.setLoadingStage1(true);
           //if there's no platform, there can't be a group
-          this.state.setLoadingStage2(true);
+          this.setState({ isLoadingSite: false });
         }
       } else {
         this.setState({
           displayName: null,
           userId: null,
-          loadingStage1: true,
-          loadingStage2: true,
+          isLoadingSite: false,
         });
       }
     });
@@ -135,14 +133,15 @@ class App extends React.Component {
           <Router>
             <Header />
             <div id="main">
-              {this.state.loadingStage1 ? (
-                <Switch>
-                  <Route path="/" exact>
-                    <Home />
-                  </Route>
-                  {/**If not the homepage, and not logged in, just go to the Auth component*/}
+              {this.state.isLoadingSite ? (
+                <Loading isFullCenter={true} />
+              ) : (
+                <div>
                   {this.state.userId ? (
-                    <div id="notHome-main">
+                    <Switch>
+                      <Route path="/" exact>
+                        <Home />
+                      </Route>
                       <Route path="/questions">
                         <LiveQuestions />
                       </Route>
@@ -164,13 +163,19 @@ class App extends React.Component {
                       <Route path="/privacypolicy">
                         <PrivacyPolicy />
                       </Route>
-                    </div>
+                    </Switch>
                   ) : (
-                    <Auth />
+                    // If NOT logged in:
+                    <Switch>
+                      <Route path="/privacypolicy">
+                        <PrivacyPolicy />
+                      </Route>
+                      <Route path="/*">
+                        <Auth />
+                      </Route>
+                    </Switch>
                   )}
-                </Switch>
-              ) : (
-                <Loading isFullCenter={true} />
+                </div>
               )}
             </div>
             <Footer />
