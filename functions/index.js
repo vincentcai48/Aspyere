@@ -1164,6 +1164,7 @@ async function generateQuestionFromDB(
       solution: question.solution,
       imageURLs: question.imageURLs,
       isError: false,
+      points: question.points,
     };
   }
 
@@ -1444,6 +1445,7 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
   var correctPoints = 0;
   var totalEventPoints = 0;
   recordQuestions.forEach((q) => {
+    if (!q.points) q.points = 0;
     totalEventPoints += q.points;
     if (q.isCorrect) {
       correctPoints += q.points;
