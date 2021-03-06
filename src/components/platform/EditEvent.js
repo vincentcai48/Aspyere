@@ -39,7 +39,7 @@ class EditEvent extends React.Component {
       tags: [],
       tagInput: "",
       points: 1,
-      qType: 0,
+      qType: 1, //1 is for written, 2 is for generated
       questionText: "",
       imageURLs: [],
       solution: "",
@@ -216,7 +216,7 @@ class EditEvent extends React.Component {
       dbRandomize: true,
       questionRandomize: true,
       points: 1,
-      qType: 0,
+      qType: 1,
       questionText: "",
       answers: [],
       imageURLs: [],
@@ -441,24 +441,24 @@ class EditEvent extends React.Component {
                       <div className="qtype-choose">
                         <button
                           className={`qtype${
-                            this.state.qType == 0 ? " selected" : ""
+                            this.state.qType == 1 ? " selected" : ""
                           }`}
-                          onClick={() => this.setState({ qType: 0 })}
+                          onClick={() => this.setState({ qType: 1 })}
                         >
                           Write a Question
                         </button>
                         <button
                           className={`qtype${
-                            this.state.qType == 1 ? " selected" : ""
+                            this.state.qType == 2 ? " selected" : ""
                           }`}
-                          onClick={() => this.setState({ qType: 1 })}
+                          onClick={() => this.setState({ qType: 2 })}
                         >
                           Generate from a Database
                         </button>
                       </div>
                     </div>
                     {/* For writing a question */}
-                    {this.state.qType == 0 && (
+                    {this.state.qType == 1 && (
                       <section id="write-q-settings">
                         <div>
                           <div className="db-tex-instructions">
@@ -598,7 +598,7 @@ class EditEvent extends React.Component {
                       </section>
                     )}
                     {/* For generating a Question */}
-                    {this.state.qType == 1 && (
+                    {this.state.qType == 2 && (
                       <section id="generate-q-settings">
                         <div className="single-setting">
                           <div>
@@ -771,7 +771,7 @@ class EditEvent extends React.Component {
                               {q.points}
                               {q.points == 1 ? " Point" : " Points"}
                             </div>
-                            {q.qType !== 0 && (
+                            {q.qType !== 1 && (
                               <div className="generated-q-info">
                                 {q.tags &&
                                   q.tags
@@ -798,7 +798,7 @@ class EditEvent extends React.Component {
 
                             <div style={{ flexBasis: "100%" }}></div>
 
-                            {q.qType === 0 && (
+                            {q.qType === 1 && (
                               <div className="written-q-info">
                                 <h5>
                                   {q.questionText || "Question Text Here"}

@@ -1155,7 +1155,19 @@ async function generateQuestionFromDB(
   if (question.dbRandomize) dbId = await getRandomDB(platformId, userId);
   if (!dbId) return null; //Here, if it is STILL nonexistent after any db was selected, this means there is no dbs connected to the platform, and thus an error.
 
-  //Step 5.5: Only if there is a specific question ID, get the question and return. If the Question ID is nonexistent, fallback to generating random question.
+  //Step 5.1: Check if qType is 1. If it is 2 or does not exist, proceed. This is for WRITTEN QUESTIONS in the event
+  if (question.qType === 1) {
+    return {
+      qType: 1,
+      answers: question.answers,
+      text: question.questionText,
+      solution: question.solution,
+      imageURLs: question.imageURLs,
+      isError: false,
+    };
+  }
+
+  //Step 5.2: Only if there is a specific question ID, get the question and return. If the Question ID is nonexistent, fallback to generating random question.
   if (!question.questionRandomize && question.questionId) {
     var qr = await db
       .collection("databases")
@@ -1373,8 +1385,8 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
           String(data.answers[index]).toLowerCase()
         ),
         points: Number(q.points),
-        dbId: q.dbId,
-        questionId: q.questionId,
+        dbId: q.dbId || null,
+        questionId: q.questionId || null,
         answer: String(data.answers[index]),
         acceptedAnswers: q.answers,
         text: q.text,

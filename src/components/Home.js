@@ -51,7 +51,6 @@ class Home extends React.Component {
     }
     return (
       <div id="home-container">
-        <div>Home</div>
         {this.context.userId ? (
           <div>
             <PlatformList />

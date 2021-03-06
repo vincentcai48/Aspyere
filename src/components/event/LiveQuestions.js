@@ -247,7 +247,11 @@ class LiveQuestions extends React.Component {
                   <br></br>
                   <button
                     className="sb back-to-platform-button"
-                    onClick={() => this.setState({ redirect: "/" })}
+                    onClick={() =>
+                      this.setState({
+                        redirect: `/platform?id=${this.state.platformId}`,
+                      })
+                    }
                   >
                     Back To Platform
                   </button>
@@ -294,7 +298,11 @@ class LiveQuestions extends React.Component {
                   )}
                   <button
                     className="arrow-button back-button"
-                    onClick={() => this.setState({ redirect: "/" })}
+                    onClick={() =>
+                      this.setState({
+                        redirect: `/platform?id=${this.state.platformId}`,
+                      })
+                    }
                   >
                     <span>{"<<<"}</span>Back to Platform
                   </button>
