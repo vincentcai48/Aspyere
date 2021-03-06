@@ -42,6 +42,7 @@ class EditEvent extends React.Component {
       qType: 0,
       questionText: "",
       imageURLs: [],
+      solution: "",
       answers: [],
       answerInput: "",
 
@@ -55,6 +56,11 @@ class EditEvent extends React.Component {
         "questionRandomize",
         "tags",
         "points",
+        "qType",
+        "answers",
+        "questionText",
+        "solution",
+        "imageURLs",
       ], //list of question settings the purpose of adding/discarding questions Does not change dynamically
     };
   }
@@ -166,7 +172,7 @@ class EditEvent extends React.Component {
   };
 
   //add and edit. If this.state.questionToEdit is a valid index, than edit, otherwise, add.
-  sumbitQuestionSettings = (event) => {
+  submitQuestionSettings = (event) => {
     event.stopPropagation();
     event.preventDefault();
 
@@ -186,6 +192,7 @@ class EditEvent extends React.Component {
         //else, add the question
         newQuestionsArray.push(newQuestion);
       }
+      console.log(newQuestion);
       return {
         questions: newQuestionsArray,
         showQuestionSettings: false,
@@ -209,6 +216,11 @@ class EditEvent extends React.Component {
       dbRandomize: true,
       questionRandomize: true,
       points: 1,
+      qType: 0,
+      questionText: "",
+      answers: [],
+      imageURLs: [],
+      solution: "",
     });
   };
 
@@ -242,6 +254,12 @@ class EditEvent extends React.Component {
         questionRandomize: questionData.questionRandomize,
         tags: questionData.tags,
         points: questionData.points,
+        qType: questionData.qType,
+        answers: questionData.answers,
+        imageURLs: questionData.imageURLs,
+        solution: questionData.solution,
+        questionText: questionData.questionText,
+        answerInput: "",
         tagInput: "",
       };
     });
@@ -492,7 +510,8 @@ class EditEvent extends React.Component {
                           placeholder="Question Text"
                         ></textarea>
 
-                        <div className="single-setting">
+                        {/* ADD IMAGE UPLOADS LATER */}
+                        {/* <div className="single-setting">
                           <div>
                             <h6>Images: </h6>
                             <p>Upload Images for this question</p>
@@ -520,7 +539,7 @@ class EditEvent extends React.Component {
                               </div>
                             );
                           })}
-                        </div>
+                        </div> */}
 
                         {this.state.isUploading && <div>Uploading ... </div>}
 
@@ -698,7 +717,7 @@ class EditEvent extends React.Component {
                     )}
                     <button
                       className="submit-button"
-                      onClick={this.sumbitQuestionSettings}
+                      onClick={this.submitQuestionSettings}
                     >
                       {this.state.questionToEdit >= 0
                         ? "Submit Changes"
@@ -752,23 +771,45 @@ class EditEvent extends React.Component {
                               {q.points}
                               {q.points == 1 ? " Point" : " Points"}
                             </div>
-                            {q.tags &&
-                              q.tags
-                                .slice(0, 5)
-                                .map((t) => <div className="q-tag">{t}</div>)}
-                            <div className="q-db">
-                              {q.dbRandomize
-                                ? "Random Database"
-                                : "From " + this.props.dbMapping[q.databaseId]}
-                            </div>
-                            <div className="q-info">
-                              {q.questionRandomize
-                                ? " Offset: " +
-                                  q.difficultyOffset +
-                                  " | Range: " +
-                                  q.difficultyRange
-                                : "Question ID: " + q.questionId}
-                            </div>
+                            {q.qType !== 0 && (
+                              <div className="generated-q-info">
+                                {q.tags &&
+                                  q.tags
+                                    .slice(0, 5)
+                                    .map((t) => (
+                                      <div className="q-tag">{t}</div>
+                                    ))}
+                                <div className="q-db">
+                                  {q.dbRandomize
+                                    ? "Random Database"
+                                    : "From " +
+                                      this.props.dbMapping[q.databaseId]}
+                                </div>
+                                <div className="q-info">
+                                  {q.questionRandomize
+                                    ? " Offset: " +
+                                      q.difficultyOffset +
+                                      " | Range: " +
+                                      q.difficultyRange
+                                    : "Question ID: " + q.questionId}
+                                </div>
+                              </div>
+                            )}
+
+                            <div style={{ flexBasis: "100%" }}></div>
+
+                            {q.qType === 0 && (
+                              <div className="written-q-info">
+                                <h5>
+                                  {q.questionText || "Question Text Here"}
+                                </h5>
+                                <ul className="answers">
+                                  <li>Answers: </li>
+                                  {q.answers &&
+                                    q.answers.map((a) => <li>{a},</li>)}
+                                </ul>
+                              </div>
+                            )}
                           </li>
                         );
                       }

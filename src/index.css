@@ -2158,6 +2158,7 @@ section#question-settings {
   border-radius: 10px;
   box-shadow: 3px 3px 6px black;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   padding: 10px 20px;
   overflow-x: hidden;
@@ -2189,6 +2190,29 @@ section#question-settings {
 
 .single-question .q-db {
   margin: 5px 20px;
+}
+
+.generated-q-info {
+  display: flex;
+}
+
+.written-q-info {
+  margin: 20px 0px;
+}
+
+.written-q-info h5 {
+  margin: 0px;
+  padding: 0px;
+  font-size: 18px;
+}
+
+.written-q-info ul {
+  display: flex;
+  margin: 15px 5px 0px 5px;
+}
+
+.written-q-info ul li {
+  margin: 2px;
 }
 
 .editEvent-button {
