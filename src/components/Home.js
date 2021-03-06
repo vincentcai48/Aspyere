@@ -51,15 +51,10 @@ class Home extends React.Component {
     }
     return (
       <div id="home-container">
+        <div>Home</div>
         {this.context.userId ? (
           <div>
-            {this.context.platform ? (
-              <div>
-                <Platform />
-              </div>
-            ) : (
-              <PlatformList />
-            )}
+            <PlatformList />
 
             {this.context.isShowPlatformPopup && (
               <div className="grayed-out-background">

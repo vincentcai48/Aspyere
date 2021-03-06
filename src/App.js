@@ -2,7 +2,12 @@ import React from "react";
 import Home from "./components/Home.js";
 import { pAuth, pFirestore, pFunctions } from "./services/config.js";
 import { PContext } from "./services/context";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Redirect,
+} from "react-router-dom";
 import DBDashboard from "./components/database/DBDashboard.js";
 import Header from "./components/Header.js";
 import Account from "./components/Account.js";
@@ -16,6 +21,7 @@ import "katex/dist/katex.min.css";
 import Contact from "./components/Contact.js";
 import Docs from "./components/docs/Docs.js";
 import PrivacyPolicy from "./components/legal/PrivacyPolicy.js";
+import Platform from "./components/platform/Platform.js";
 
 class App extends React.Component {
   constructor() {
@@ -30,7 +36,8 @@ class App extends React.Component {
       currentDB: null,
       setCurrentDB: (db) => this.setState({ currentDB: db }),
       platform: null, //current Platform
-      setPlatform: (p) => this.setState({ platform: p }),
+      setPlatform: (p) =>
+        this.setState({ platform: p, redirect: `/platform?id=${p}` }),
       platformName: null,
       setPlatformName: (n) => this.setState({ platformName: n }),
       usersMapping: {},
@@ -41,6 +48,7 @@ class App extends React.Component {
       joinPlatform: this.joinPlatform,
       isMobile: false,
       appSettings: {},
+      redirect: null,
     };
   }
 
@@ -110,20 +118,22 @@ class App extends React.Component {
   joinPlatform = async (platformId) => {
     this.setState({ isLoading: true });
     var joinPlatformFirebase = pFunctions.httpsCallable("joinPlatform");
-    await joinPlatformFirebase({ platformId: platformId })
-      .then((res) => {
-        this.setState({ isLoading: false });
-        if (res.data) {
-          if (this.state.platform != platformId)
-            this.setState({ platform: platformId });
-        } else {
-          console.log("error");
-        }
-      })
-      .catch((e) => {
-        this.setState({ isLoading: false });
-        console.error(e);
-      });
+    try {
+      var res = await joinPlatformFirebase({ platformId: platformId });
+
+      this.setState({ isLoading: false });
+      if (res.data) {
+        if (this.state.platform != platformId)
+          this.setState({
+            platform: platformId,
+          });
+      } else {
+        console.log("error");
+      }
+    } catch (e) {
+      this.setState({ isLoading: false });
+      console.error(e);
+    }
   };
 
   render() {
@@ -132,15 +142,18 @@ class App extends React.Component {
         <div className="App">
           <Router>
             <Header />
-            <div id="main">
+            <main id="main">
               {this.state.isLoadingSite ? (
                 <Loading isFullCenter={true} />
               ) : (
-                <div>
+                <div id="site-afterLoading">
                   {this.state.userId ? (
                     <Switch>
                       <Route path="/" exact>
-                        <Home />
+                        <Home></Home>
+                      </Route>
+                      <Route path="/platform">
+                        <Platform />
                       </Route>
                       <Route path="/questions">
                         <LiveQuestions />
@@ -177,7 +190,7 @@ class App extends React.Component {
                   )}
                 </div>
               )}
-            </div>
+            </main>
             <Footer />
           </Router>
 

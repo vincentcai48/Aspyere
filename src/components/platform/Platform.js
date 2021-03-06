@@ -14,6 +14,7 @@ import MyStats from "./MyStats";
 import PlatformAdmin from "./PlatformAdmin";
 import personIcon from "../../images/person-icon.png";
 import Loading from "../Loading";
+import { Redirect } from "react-router";
 
 class Platform extends React.Component {
   constructor() {
@@ -53,15 +54,23 @@ class Platform extends React.Component {
 
       //platform options:
       showOptions: false,
+      platformId: "",
     };
   }
 
   async componentDidMount() {
+    //Step 1: get the url param id and set to a var in state.
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const pId = urlParams.get("id");
+    this.setState({ platformId: pId });
+
+    //Step 2: get all the data from the platform
     var isFirstTime = true;
     try {
       var unsubscribe = pFirestore
         .collection("platforms")
-        .doc(this.context.platform)
+        .doc(pId)
         .onSnapshot(async (doc) => {
           if (!doc.exists)
             return this.setState({
@@ -523,6 +532,7 @@ class Platform extends React.Component {
   };
 
   render() {
+    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     if (this.state.isLoadingPlatform)
       return (
         <div>
@@ -604,7 +614,7 @@ class Platform extends React.Component {
             This Platform No Longer Exists
             <button
               className="sb"
-              onClick={() => this.context.setPlatform(null)}
+              onClick={() => this.setState({ redirect: `/platformlist` })}
             >
               Explore New Platforms
             </button>

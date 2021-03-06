@@ -30,6 +30,9 @@ code {
   width: 100%;
 }
 
+#site-afterLoading {
+  width: 100%;
+}
 
 #home-container {
   width: 100%;
@@ -393,6 +396,58 @@ header .header-s2 {
 /*stands for "no-scroll-popup"*/
 .nsp {
   overflow: hidden;
+}
+
+/* Full Screen Popup */
+.fsp {
+  position: fixed;
+  width: 90vw;
+  height: 100vh;
+  top: 0px;
+  left: 0px;
+  z-index: 11;
+  background-color: white;
+  overflow: scroll;
+}
+
+.fsp-header {
+  display: flex;
+  width: 100%;
+  height: 8vh;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background-color: lightgrey;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  margin: 0px;
+}
+
+.fsp-header .side-buttons {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.fsp-main {
+  padding: 10vh 5vw;
+  box-sizing: border-box;
+  z-index: 12;
+}
+
+.event-title-edit {
+  margin-bottom: 30px;
+  text-decoration: none;
+  font-weight: bolder;
+}
+
+.event-description-edit {
+  max-width: 450px;
+  min-width: 450px;
+  height: 60px;
 }
 
 #gIcon-image {
@@ -1987,6 +2042,7 @@ section.lobbyPlatform-header {
 .react-datepicker-component {
   font-size: 18px;
   font-weight: bolder;
+  z-index: 11;
 }
 
 #duration-inputs {
@@ -2057,6 +2113,22 @@ section#question-settings {
 .single-setting div p {
   margin: 0px;
   font-size: 12px;
+}
+
+.qtype {
+  border-radius: 5px;
+  border: 2px solid green;
+  background-color: white;
+  margin: 5px 10px;
+  color: green;
+  padding: 3px 10px;
+  transition: all 0.2s;
+}
+
+.qtype:hover,
+.qtype.selected {
+  color: white;
+  background-color: green;
 }
 
 .or-text {
@@ -3783,5 +3855,23 @@ footer {
 
   .single-platform .p-Icon-inList {
     display: none;
+  }
+
+  .fsp-header {
+    justify-content: flex-start;
+    padding-left: 10px;
+  }
+
+  .fsp-header .side-buttons {
+    right: 5px;
+  }
+
+  .event-title-edit {
+    max-width: 250px;
+  }
+
+  .event-description-edit {
+    max-width: 250px;
+    min-width: 250px;
   }
 }

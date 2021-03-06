@@ -2,7 +2,7 @@ import React from "react";
 import { pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
 import pJumbo1 from "../../images/pJumbo1.jpg";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 
 //allPlatforms are in context, but only get filled out when
 class PlatformList extends React.Component {
@@ -39,6 +39,7 @@ class PlatformList extends React.Component {
     } else {
       this.context.setPlatform(id);
     }
+    this.setState({ redirect: `/platform?id=${id}` });
   };
 
   changeState = (e) => {
@@ -63,6 +64,7 @@ class PlatformList extends React.Component {
   };
 
   render() {
+    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
       <div id="platformList-container">
         <div
@@ -128,11 +130,9 @@ class PlatformList extends React.Component {
                       <button
                         className="bb"
                         style={{ display: "block" }}
-                        onClick={() => {
-                          this.context.setPlatform(
-                            this.context.rootUserData.platform
-                          );
-                        }}
+                        onClick={() =>
+                          this.setState({ redirect: `/platform?id=${p.id}` })
+                        }
                       >
                         Joined
                       </button>

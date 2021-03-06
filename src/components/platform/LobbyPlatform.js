@@ -3,6 +3,7 @@ import { pAuth, pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
 import Loading from "../Loading";
 import personIcon from "../../images/person-icon.png";
+import { Redirect } from "react-router";
 
 //PROPS: Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), String groupName (what to call a "group". Eg: a "class"), Boolean requireGroup, Boolean publicCreateGroup, Boolean groupOptionsOn, Array[] groupOptions, Function() checkJoinedStatus (to use when you join), Function() setMenuOption, Object() privateSettings, Boolean publicJoin, Object() platformSettings.
 class LobbyPlatform extends React.Component {
@@ -146,6 +147,7 @@ class LobbyPlatform extends React.Component {
   };
 
   render() {
+    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
       <div>
         <section
@@ -156,7 +158,9 @@ class LobbyPlatform extends React.Component {
           }}
         >
           <span>
-            <button onClick={() => this.context.setPlatform(null)}>
+            <button
+              onClick={() => this.setState({ redirect: "/platformlist" })}
+            >
               All Platforms
             </button>
             <i className="fas fa-chevron-right"></i>

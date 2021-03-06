@@ -3,6 +3,7 @@ import { PContext } from "../../services/context";
 import DatePicker from "react-datepicker";
 import { uuidv4 } from "uuidv4";
 import { fbTimestamp, pFunctions } from "../../services/config";
+import TextDisplay from "../TextDisplay";
 
 //PROPS: String eventId (null if adding event, id of event if editing it), Object eventData (the data of the event, null if adding object), Function closeFunction (to x-out of the popup), Function() setIsNeedRefresh (to show the refresh popup)
 class EditEvent extends React.Component {
@@ -38,6 +39,11 @@ class EditEvent extends React.Component {
       tags: [],
       tagInput: "",
       points: 1,
+      qType: 0,
+      questionText: "",
+      imageURLs: [],
+      answers: [],
+      answerInput: "",
 
       //Other settings:
       questionSettingsList: [
@@ -258,333 +264,533 @@ class EditEvent extends React.Component {
       });
   };
 
+  addAnswer = () => {
+    this.setState((p) => ({
+      answers: [...p.answers, this.state.answerInput],
+      answerInput: "",
+    }));
+  };
+
+  deleteAnswer = (e) => {
+    this.setState((p) => ({
+      answers: p.answers.filter((a) => a !== e.target.name),
+    }));
+  };
+
   render() {
     var count = 0;
     return (
       <div className="grayed-out-background">
-        <div className="large-popup editEvent-container">
-          <h3>{this.props.eventId ? "Edit" : "Add"} Event</h3>
-          {this.state.isLoading && (
-            <div className="heading-note">Loading...</div>
-          )}
-          {this.state.isError && (
-            <div className="heading-note">An Error Occurred</div>
-          )}
-          <div>
-            <input
-              onChange={this.changeState}
-              value={this.state.name}
-              name="name"
-              placeholder="Event Name"
-            ></input>
-            <br></br>
-            <input
-              onChange={this.changeState}
-              value={this.state.description}
-              name="description"
-              placeholder="Description of Event"
-            ></input>
-            <div>
-              <DatePicker
-                selected={this.state.startTime}
-                onChange={(date) => this.setState({ startTime: date })}
-                showTimeSelect
-                dateFormat="Pp"
-                className="react-datepicker-component"
-              ></DatePicker>
-            </div>
-            <div id="duration-inputs">
-              <p>Duration: </p>
-              <input
-                type="number"
-                min="0"
-                placeholder="Hrs"
-                onChange={this.changeState}
-                name="inputHrs"
-                value={this.state.inputHrs}
-              ></input>
-              :
-              <input
-                type="number"
-                min="0"
-                placeholder="Mins"
-                onChange={this.changeState}
-                name="inputMins"
-                value={this.state.inputMins}
-              ></input>
-              :
-              <input
-                type="number"
-                min="0"
-                max="60"
-                placeholder="Secs"
-                name="inputSecs"
-                onChange={this.changeState}
-                value={this.state.inputSecs}
-              ></input>
-            </div>
-            <h4>Topics</h4>
-            <input
-              onChange={this.changeState}
-              value={this.state.topicInput}
-              name="topicInput"
-              placeholder="Write a Topic"
-            ></input>
-            <button className="sb" onClick={this.addTopic}>
-              Add Topic
-            </button>
-            <ul className="event-topics">
-              {this.state.topics.map((t) => (
-                <li>
-                  <div>{t}</div>
-                  <button className="x-out" onClick={() => this.deleteTopic(t)}>
-                    X
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            <h4>Questions</h4>
-            <button
-              className="sb"
-              onClick={() =>
-                this.setState({
-                  showQuestionSettings: true,
-                  questionToEdit: -1,
-                })
-              }
-            >
-              Add Question
-            </button>
-
-            {this.state.showQuestionSettings && (
-              <section id="question-settings">
-                <h5>
-                  {this.state.questionToEdit >= 0
-                    ? `Edit Question #${this.state.questionToEdit + 1}`
-                    : "Add a Question"}
-                </h5>
-                <div className="single-setting">
-                  <div>
-                    <h6>Points: </h6>
-                    <p>How much is this question worth?</p>
-                  </div>
-
+        <div className="fsp">
+          <div className="editEvent-container">
+            <h3 className="fsp-header">
+              {this.props.eventId ? "Edit" : "Add"} Event
+              <div className="side-buttons">
+                <button className="submit-button" onClick={this.saveAll}>
+                  Save
+                </button>
+                <button
+                  className="cancel-button"
+                  onClick={this.props.closeFunction}
+                >
+                  Cancel
+                </button>
+              </div>
+            </h3>
+            <div className="fsp-main">
+              {this.state.isLoading && (
+                <div className="heading-note">Loading...</div>
+              )}
+              {this.state.isError && (
+                <div className="heading-note">An Error Occurred</div>
+              )}
+              <div>
+                <input
+                  className="event-title-edit"
+                  onChange={this.changeState}
+                  value={this.state.name}
+                  name="name"
+                  placeholder="Event Name"
+                ></input>
+                <br></br>
+                <textarea
+                  className="event-description-edit"
+                  onChange={this.changeState}
+                  value={this.state.description}
+                  name="description"
+                  placeholder="Description of Event"
+                ></textarea>
+                <div>
+                  <DatePicker
+                    selected={this.state.startTime}
+                    onChange={(date) => this.setState({ startTime: date })}
+                    showTimeSelect
+                    dateFormat="Pp"
+                    className="react-datepicker-component"
+                  ></DatePicker>
+                </div>
+                <div id="duration-inputs">
+                  <p>Duration: </p>
                   <input
                     type="number"
                     min="0"
-                    name="points"
+                    placeholder="Hrs"
                     onChange={this.changeState}
-                    value={this.state.points}
+                    name="inputHrs"
+                    value={this.state.inputHrs}
                   ></input>
-                </div>
-                <div className="single-setting">
-                  <div>
-                    <h6>Difficulty Offset: </h6>
-                    <p>Make questions easier or harder</p>
-                  </div>
-
-                  <input
-                    type="number"
-                    min="-100"
-                    max="100"
-                    name="difficultyOffset"
-                    onChange={this.changeState}
-                    value={this.state.difficultyOffset}
-                  ></input>
-                </div>
-                <div className="single-setting">
-                  <div>
-                    <h6>Difficulty Range: </h6>
-                    <p>Plus or minus this amount of difficulty</p>
-                  </div>
-
+                  :
                   <input
                     type="number"
                     min="0"
-                    name="difficultyRange"
+                    placeholder="Mins"
                     onChange={this.changeState}
-                    value={this.state.difficultyRange}
+                    name="inputMins"
+                    value={this.state.inputMins}
                   ></input>
-                </div>
-                <div className="single-setting">
-                  <div>
-                    <h6>Database: </h6>
-                    <p>Choose a database to fetch the question from</p>
-                  </div>
-                  <select
-                    id="select-database"
-                    value={this.state.databaseId}
-                    name="databaseId"
-                    onChange={(e) => {
-                      this.changeState(e);
-                      this.setState({ dbRandomize: false });
-                    }}
-                  >
-                    <option value={null}>--Choose Database--</option>
-                    {this.props.dbMapping &&
-                      Object.keys(this.props.dbMapping).map((dbId) => {
-                        return (
-                          <option value={dbId}>
-                            {this.props.dbMapping[dbId]}
-                          </option>
-                        );
-                      })}
-                  </select>
-                  <div className="or-text">OR</div>
-                  <div>
-                    <input
-                      type="checkbox"
-                      checked={this.state.dbRandomize}
-                      onChange={this.changeCheckboxState}
-                      name="dbRandomize"
-                    ></input>
-                    <label>Any Database</label>
-                  </div>
-                </div>
-                <div className="single-setting">
-                  <div>
-                    <h6>Question Id: </h6>
-                    <p>Specific question in the chosen database</p>
-                  </div>
+                  :
                   <input
-                    name="questionId"
+                    type="number"
+                    min="0"
+                    max="60"
+                    placeholder="Secs"
+                    name="inputSecs"
                     onChange={this.changeState}
-                    value={this.state.questionId}
+                    value={this.state.inputSecs}
                   ></input>
-                  <div className="or-text">OR</div>
-                  <div>
-                    <input
-                      type="checkbox"
-                      checked={this.state.questionRandomize}
-                      onChange={this.changeCheckboxState}
-                      name="questionRandomize"
-                    ></input>
-                    <label>Randomize</label>
-                  </div>
                 </div>
-                <div className="single-setting">
-                  <div>
-                    <h6>Question Tags</h6>
-                    <p>Decide the type of question</p>
-                  </div>
-                  <input
-                    onChange={this.changeState}
-                    value={this.state.tagInput}
-                    name="tagInput"
-                    placeholder="Write a Tag"
-                  ></input>
-                  <button className="sb" onClick={this.addTag}>
-                    Add Tag
-                  </button>
-                </div>
-                <ul id="question-tags">
-                  {this.state.tags.map((t) => (
+                <h4>Topics</h4>
+                <input
+                  onChange={this.changeState}
+                  value={this.state.topicInput}
+                  name="topicInput"
+                  placeholder="Write a Topic"
+                ></input>
+                <button className="sb" onClick={this.addTopic}>
+                  Add Topic
+                </button>
+                <ul className="event-topics">
+                  {this.state.topics.map((t) => (
                     <li>
                       <div>{t}</div>
                       <button
                         className="x-out"
-                        onClick={() => this.deleteTag(t)}
+                        onClick={() => this.deleteTopic(t)}
                       >
                         X
                       </button>
                     </li>
                   ))}
                 </ul>
+
+                <h4>Questions</h4>
                 <button
-                  className="submit-button"
-                  onClick={this.sumbitQuestionSettings}
+                  className="sb"
+                  onClick={() =>
+                    this.setState({
+                      showQuestionSettings: true,
+                      questionToEdit: -1,
+                    })
+                  }
                 >
-                  {this.state.questionToEdit >= 0
-                    ? "Submit Changes"
-                    : "Add this Question"}
+                  Add Question
                 </button>
-                <button
-                  className="cancel-button"
-                  onClick={this.discardQuestionSettings}
-                >
-                  Discard
-                </button>
-                {this.state.questionToEdit >= 0 && (
-                  <div>
-                    <hr></hr>
+
+                {this.state.showQuestionSettings && (
+                  <section id="question-settings">
+                    <h5>
+                      {this.state.questionToEdit >= 0
+                        ? `Edit Question #${this.state.questionToEdit + 1}`
+                        : "Add a Question"}
+                    </h5>
+
+                    <div className="single-setting">
+                      <div>
+                        <h6>Points: </h6>
+                        <p>How much is this question worth?</p>
+                      </div>
+
+                      <input
+                        type="number"
+                        min="0"
+                        name="points"
+                        onChange={this.changeState}
+                        value={this.state.points}
+                      ></input>
+                    </div>
+
+                    <div className="single-setting">
+                      <div className="qtype-choose">
+                        <button
+                          className={`qtype${
+                            this.state.qType == 0 ? " selected" : ""
+                          }`}
+                          onClick={() => this.setState({ qType: 0 })}
+                        >
+                          Write a Question
+                        </button>
+                        <button
+                          className={`qtype${
+                            this.state.qType == 1 ? " selected" : ""
+                          }`}
+                          onClick={() => this.setState({ qType: 1 })}
+                        >
+                          Generate from a Database
+                        </button>
+                      </div>
+                    </div>
+                    {/* For writing a question */}
+                    {this.state.qType == 0 && (
+                      <section id="write-q-settings">
+                        <div>
+                          <div className="db-tex-instructions">
+                            <button
+                              className="ssb"
+                              onClick={() =>
+                                this.setState((p) => {
+                                  return {
+                                    showTeXInstructions: !p.showTeXInstructions,
+                                  };
+                                })
+                              }
+                            >
+                              Write questions and solutions in{" "}
+                              <TextDisplay text={"$\\TeX$"}></TextDisplay>
+                            </button>
+                            {this.state.showTeXInstructions && (
+                              <p>
+                                Use the "$" (dollar sign) character to enclose
+                                <TextDisplay
+                                  text={"$\\TeX$"}
+                                ></TextDisplay>{" "}
+                                equations
+                                <br></br>
+                                <br></br>
+                                Example: {'"$\\frac{a}{b}$"'}{" "}
+                                <i className="fas fa-arrow-alt-circle-right"></i>{" "}
+                                <TextDisplay
+                                  text={"$\\frac{a}{b}$"}
+                                ></TextDisplay>
+                                <br></br>
+                                <p style={{ fontSize: "12px" }}>
+                                  *Please note that multiline equations are not
+                                  supported, create a separate equation per
+                                  line.
+                                </p>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <textarea
+                          id="edit-question-text"
+                          name="questionText"
+                          value={this.state.questionText.replaceAll(
+                            "[&&linebreak]",
+                            "\n"
+                          )}
+                          onChange={this.changeState}
+                          placeholder="Question Text"
+                        ></textarea>
+
+                        <div className="single-setting">
+                          <div>
+                            <h6>Images: </h6>
+                            <p>Upload Images for this question</p>
+                          </div>
+                          <div>
+                            <input
+                              type="file"
+                              accept="image/png, image/jpeg"
+                              onChange={this.uploadFile}
+                            ></input>
+                          </div>
+                        </div>
+                        <div>
+                          {this.state.imageURLs.map((e) => {
+                            return (
+                              <div className="add-q-image-container">
+                                <button
+                                  onClick={this.deleteImage}
+                                  className="x-out"
+                                  name={e}
+                                >
+                                  X
+                                </button>
+                                <img src={e}></img>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {this.state.isUploading && <div>Uploading ... </div>}
+
+                        <div className="single-setting">
+                          <div>
+                            <h6>Answers:</h6>
+                            <p>Accepted Answers for this Question</p>
+                          </div>
+
+                          <div>
+                            <input
+                              type="text"
+                              autoComplete="off"
+                              onChange={this.changeState}
+                              name="answerInput"
+                              placeholder="Write an answer"
+                              value={this.state.answerInput}
+                            ></input>
+                            <button onClick={this.addAnswer} className="sb">
+                              Add this Answer
+                            </button>
+                          </div>
+                        </div>
+                        <ul id="add-q-answers-list">
+                          {this.state.answers.map((a) => (
+                            <li t={a}>
+                              {a}
+                              <button
+                                className="x-out"
+                                onClick={this.deleteAnswer}
+                                name={a}
+                              >
+                                X
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        {/* ADD SUPPORT FOR SOLUTIONS LATER */}
+                        {/* <div>
+                          <h4>Solution:</h4>
+                          <textarea
+                            placeholder="Write a Solution..."
+                            onChange={this.changeState}
+                            name="solution"
+                            value={
+                              this.state.solution
+                                ? this.state.solution.replaceAll(
+                                    "[&&linebreak]",
+                                    "\n"
+                                  )
+                                : ""
+                            }
+                            className="solution-text"
+                          ></textarea>
+                        </div> */}
+                      </section>
+                    )}
+                    {/* For generating a Question */}
+                    {this.state.qType == 1 && (
+                      <section id="generate-q-settings">
+                        <div className="single-setting">
+                          <div>
+                            <h6>Difficulty Offset: </h6>
+                            <p>Make questions easier or harder</p>
+                          </div>
+
+                          <input
+                            type="number"
+                            min="-100"
+                            max="100"
+                            name="difficultyOffset"
+                            onChange={this.changeState}
+                            value={this.state.difficultyOffset}
+                          ></input>
+                        </div>
+                        <div className="single-setting">
+                          <div>
+                            <h6>Difficulty Range: </h6>
+                            <p>Plus or minus this amount of difficulty</p>
+                          </div>
+
+                          <input
+                            type="number"
+                            min="0"
+                            name="difficultyRange"
+                            onChange={this.changeState}
+                            value={this.state.difficultyRange}
+                          ></input>
+                        </div>
+                        <div className="single-setting">
+                          <div>
+                            <h6>Database: </h6>
+                            <p>Choose a database to fetch the question from</p>
+                          </div>
+                          <select
+                            id="select-database"
+                            value={this.state.databaseId}
+                            name="databaseId"
+                            onChange={(e) => {
+                              this.changeState(e);
+                              this.setState({ dbRandomize: false });
+                            }}
+                          >
+                            <option value={null}>--Choose Database--</option>
+                            {this.props.dbMapping &&
+                              Object.keys(this.props.dbMapping).map((dbId) => {
+                                return (
+                                  <option value={dbId}>
+                                    {this.props.dbMapping[dbId]}
+                                  </option>
+                                );
+                              })}
+                          </select>
+                          <div className="or-text">OR</div>
+                          <div>
+                            <input
+                              type="checkbox"
+                              checked={this.state.dbRandomize}
+                              onChange={this.changeCheckboxState}
+                              name="dbRandomize"
+                            ></input>
+                            <label>Any Database</label>
+                          </div>
+                        </div>
+                        <div className="single-setting">
+                          <div>
+                            <h6>Question Id: </h6>
+                            <p>Specific question in the chosen database</p>
+                          </div>
+                          <input
+                            name="questionId"
+                            onChange={this.changeState}
+                            value={this.state.questionId}
+                          ></input>
+                          <div className="or-text">OR</div>
+                          <div>
+                            <input
+                              type="checkbox"
+                              checked={this.state.questionRandomize}
+                              onChange={this.changeCheckboxState}
+                              name="questionRandomize"
+                            ></input>
+                            <label>Randomize</label>
+                          </div>
+                        </div>
+                        <div className="single-setting">
+                          <div>
+                            <h6>Question Tags</h6>
+                            <p>Decide the type of question</p>
+                          </div>
+                          <input
+                            onChange={this.changeState}
+                            value={this.state.tagInput}
+                            name="tagInput"
+                            placeholder="Write a Tag"
+                          ></input>
+                          <button className="sb" onClick={this.addTag}>
+                            Add Tag
+                          </button>
+                        </div>
+                        <ul id="question-tags">
+                          {this.state.tags.map((t) => (
+                            <li>
+                              <div>{t}</div>
+                              <button
+                                className="x-out"
+                                onClick={() => this.deleteTag(t)}
+                              >
+                                X
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                    <button
+                      className="submit-button"
+                      onClick={this.sumbitQuestionSettings}
+                    >
+                      {this.state.questionToEdit >= 0
+                        ? "Submit Changes"
+                        : "Add this Question"}
+                    </button>
                     <button
                       className="cancel-button"
-                      onClick={this.deleteQuestion}
+                      onClick={this.discardQuestionSettings}
                     >
-                      Delete This Question
+                      Discard
                     </button>
-                  </div>
-                )}
-              </section>
-            )}
-            {this.state.questionToEdit && this.state.questionToEdit >= 0 && (
-              <section id="edit-question">
-                <h5>Question #{this.state.questionToEdit + 1}</h5>
-              </section>
-            )}
-            <ul id="event-questions">
-              {this.state.questions &&
-                (() => {
-                  var arr = [];
-                  for (var i = 0; i < this.state.questions.length; i++) {
-                    var q = this.state.questions[i];
-
-                    arr.push(
-                      <li className="single-question">
+                    {this.state.questionToEdit >= 0 && (
+                      <div>
+                        <hr></hr>
                         <button
-                          className="sb editEvent-button fas fa-edit"
-                          name={i}
-                          onClick={this.editEvent}
-                        ></button>
-                        <h6>Question #{i + 1}</h6>
-                        <div className="points">
-                          {q.points}
-                          {q.points == 1 ? " Point" : " Points"}
-                        </div>
-                        {q.tags &&
-                          q.tags
-                            .slice(0, 5)
-                            .map((t) => <div className="q-tag">{t}</div>)}
-                        <div className="q-db">
-                          {q.dbRandomize
-                            ? "Random Database"
-                            : "From " + this.props.dbMapping[q.databaseId]}
-                        </div>
-                        <div className="q-info">
-                          {q.questionRandomize
-                            ? " Offset: " +
-                              q.difficultyOffset +
-                              " | Range: " +
-                              q.difficultyRange
-                            : "Question ID: " + q.questionId}
-                        </div>
-                      </li>
-                    );
-                  }
-                  return arr;
-                })()}
-            </ul>
-          </div>
-          <button className="submit-button" onClick={this.saveAll}>
-            Save
-          </button>
-          <button className="cancel-button" onClick={this.props.closeFunction}>
-            Cancel
-          </button>
-          {this.props.eventId && (
-            <div>
-              <hr></hr>
-              <button
-                className="cancel-button"
-                onClick={() => this.setState({ showDeletePopup: true })}
-              >
-                Delete this Event
-              </button>
-            </div>
-          )}
-        </div>
+                          className="cancel-button"
+                          onClick={this.deleteQuestion}
+                        >
+                          Delete This Question
+                        </button>
+                      </div>
+                    )}
+                  </section>
+                )}
 
+                {this.showQuestionCreate && (
+                  <div className="grayed-out-background"></div>
+                )}
+
+                {this.state.questionToEdit && this.state.questionToEdit >= 0 && (
+                  <section id="edit-question">
+                    <h5>Question #{this.state.questionToEdit + 1}</h5>
+                  </section>
+                )}
+                <ul id="event-questions">
+                  {this.state.questions &&
+                    (() => {
+                      var arr = [];
+                      for (var i = 0; i < this.state.questions.length; i++) {
+                        var q = this.state.questions[i];
+
+                        arr.push(
+                          <li className="single-question">
+                            <button
+                              className="sb editEvent-button fas fa-edit"
+                              name={i}
+                              onClick={this.editEvent}
+                            ></button>
+                            <h6>Question #{i + 1}</h6>
+                            <div className="points">
+                              {q.points}
+                              {q.points == 1 ? " Point" : " Points"}
+                            </div>
+                            {q.tags &&
+                              q.tags
+                                .slice(0, 5)
+                                .map((t) => <div className="q-tag">{t}</div>)}
+                            <div className="q-db">
+                              {q.dbRandomize
+                                ? "Random Database"
+                                : "From " + this.props.dbMapping[q.databaseId]}
+                            </div>
+                            <div className="q-info">
+                              {q.questionRandomize
+                                ? " Offset: " +
+                                  q.difficultyOffset +
+                                  " | Range: " +
+                                  q.difficultyRange
+                                : "Question ID: " + q.questionId}
+                            </div>
+                          </li>
+                        );
+                      }
+                      return arr;
+                    })()}
+                </ul>
+              </div>
+
+              {this.props.eventId && (
+                <div>
+                  <hr></hr>
+                  <button
+                    className="cancel-button"
+                    onClick={() => this.setState({ showDeletePopup: true })}
+                  >
+                    Delete this Event
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
         {this.state.showDeletePopup && (
           <div className="grayed-out-background">
             <div className="popup">
