@@ -3490,6 +3490,12 @@ footer {
   padding: 15px;
 }
 
+#privacy-policy {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5vh 5vw;
+}
+
 @media (max-width: 767px) and (min-width: 577px) {
   #joined-groups,
   #groups-list {

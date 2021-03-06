@@ -15,6 +15,7 @@ import Loading from "./components/Loading.js";
 import "katex/dist/katex.min.css";
 import Contact from "./components/Contact.js";
 import Docs from "./components/docs/Docs.js";
+import PrivacyPolicy from "./components/legal/PrivacyPolicy.js";
 
 class App extends React.Component {
   constructor() {
@@ -159,6 +160,9 @@ class App extends React.Component {
                       </Route>
                       <Route path="/docs">
                         <Docs />
+                      </Route>
+                      <Route path="/privacypolicy">
+                        <PrivacyPolicy />
                       </Route>
                     </div>
                   ) : (
