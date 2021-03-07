@@ -623,8 +623,15 @@ async function joinGroupInDB(
       .collection("users")
       .doc(userId)
       .update({
-        currentGroup: groupId,
         joinedGroups: admin.firestore.FieldValue.arrayUnion(groupId),
+      });
+    await db
+      .collection("platforms")
+      .doc(platformId)
+      .collection("groups")
+      .doc(groupId)
+      .update({
+        members: admin.firestore.FieldValue.arrayUnion(userId),
       });
     return;
   }
@@ -642,7 +649,6 @@ async function joinGroupInDB(
       .collection("users")
       .doc(userId)
       .set({
-        currentGroup: groupId,
         completedEvents: [],
         joinedGroups: [groupId], //create this. These are the groups already joined at least once before
       });
@@ -653,11 +659,21 @@ async function joinGroupInDB(
       .collection("users")
       .doc(userId)
       .update({
-        currentGroup: groupId,
         joinedGroups: admin.firestore.FieldValue.arrayUnion(groupId),
       });
   }
-  //this should be for every new group joined.
+  //Every New group joined, do two things
+  //1: Add the user to the group document
+  await db
+    .collection("platforms")
+    .doc(platformId)
+    .collection("groups")
+    .doc(groupId)
+    .update({
+      members: admin.firestore.FieldValue.arrayUnion(userId),
+    });
+
+  //2: Create a stats document for the user
   var userDataRecords = await doc.ref.collection(groupId).doc("userData").get();
   if (!userDataRecords.exists) {
     userDataRecords.ref.set(
