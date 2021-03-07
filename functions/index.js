@@ -531,15 +531,36 @@ exports.joinIndividually = functions.https.onCall(async (data, context) => {
 });
 //returns {isError: ,errorType: 1- joinCode is wrong, 2- platform doesn't exist 3- server error}
 
-//data: {platformId: }
-//just sets the group to null
+//data: {platformId: , groupId: }
+//takes the user out of the group.
 exports.unjoinGroup = functions.https.onCall(async (data, context) => {
-  await db
-    .collection("platforms")
-    .doc(data.platformId)
-    .collection("users")
-    .doc(context.auth.uid)
-    .update({ currentGroup: null });
+  //Two steps: remove the user from the group doc, and delete the group records for the user docs
+  try {
+    //Step 1: Remove as a member of this group (simply take the userid out of the array)
+    await db
+      .collection("platforms")
+      .doc(data.platformId)
+      .collection("groups")
+      .doc(data.groupId)
+      .update({
+        members: admin.firestore.FieldValue.arrayRemove(context.auth.uid),
+      });
+
+    //Step 2: Remove the group from joinedGroups, and remove the stats page
+    var userDoc = db
+      .collection("platforms")
+      .doc(data.platformId)
+      .collection("users")
+      .doc(context.auth.uid);
+
+    await userDoc.update({
+      joinedGroups: admin.firestore.FieldValue.arrayRemove(data.groupId),
+    });
+    await userDoc.collection(groupId).doc("userData").delete();
+    return true;
+  } catch (e) {
+    return false;
+  }
 });
 
 //data: Object {platformId: , groupId: , accessCodeTry}
