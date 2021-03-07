@@ -52,14 +52,15 @@ class Header extends React.Component {
         <div className="header-s1">
           <Link className="react-link" to="/">
             <h1 id="title-h1">
-              {!this.context.platformName || !this.context.platform ? (
+              Aspyere
+              {/* {!this.context.platformName || !this.context.platform ? (
                 "Aspyere"
               ) : (
                 <div>
                   {this.context.platformName}
                   <div id="h1-onAspyere">on&nbsp;Aspyere</div>
                 </div>
-              )}
+              )} */}
             </h1>
           </Link>
           {this.context.isMobile && (
@@ -90,15 +91,14 @@ class Header extends React.Component {
                   Databases
                 </Link>
 
-                <Link
-                  to="/"
+                <button
                   className="d-item react-link"
                   onClick={() => {
                     this.context.setIsShowPlatformPopup(true);
                   }}
                 >
                   Platform
-                </Link>
+                </button>
               </ul>
             </div>
 
@@ -116,6 +116,73 @@ class Header extends React.Component {
                   Login
                 </button>
               )}
+            </div>
+          </div>
+        )}
+
+        {this.context.isShowPlatformPopup && (
+          <div className="grayed-out-background">
+            <div className="popup platformPopup">
+              <div className="first-row">
+                <h4>Platforms</h4>
+
+                <button
+                  className="x-out-platforms"
+                  onClick={() => this.context.setIsShowPlatformPopup(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <Link
+                className="enp arrow-button"
+                to="/"
+                onClick={() => {
+                  this.context.setIsShowPlatformPopup(false);
+                }}
+              >
+                Explore New Platforms <span>{">>>"}</span>
+              </Link>
+              <ul id="user-allPlatforms">
+                {this.context.rootUserData &&
+                  this.context.rootUserData.allPlatforms &&
+                  this.context.rootUserData.allPlatforms.map((p) => {
+                    var platforms = this.context.allPlatforms.filter(
+                      (pl) => pl.id == p
+                    );
+
+                    if (!platforms[0]) return "";
+                    var pData = platforms[0];
+                    if (!pData.name && !pData.description) return "";
+                    return (
+                      <li className="single-myPlatform" key={pData.id}>
+                        <div>
+                          {this.context.rootUserData.platform == p ? (
+                            <div className="joined-text">Joined</div>
+                          ) : (
+                            <button
+                              className="join-platform-button"
+                              onClick={async () => {
+                                await this.context.joinPlatform(p);
+                                this.context.setIsShowPlatformPopup(false);
+                                window.location.reload();
+                              }}
+                            >
+                              Join
+                            </button>
+                          )}
+                        </div>
+                        <div className="platform-nd">
+                          <h5>{pData.name}</h5>
+                          <p>
+                            {pData.description && pData.description.length > 100
+                              ? pData.description.substr(0, 100) + "..."
+                              : pData.description}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
             </div>
           </div>
         )}

@@ -2970,6 +2970,7 @@ input[name="topicInput"] {
 .platformPopup {
   padding: 40px 20px;
   position: relative;
+  color: black;
 }
 
 .platformPopup .first-row {

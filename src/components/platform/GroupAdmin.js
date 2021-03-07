@@ -10,7 +10,17 @@ import Loading from "../Loading";
 import personIcon from "../../images/person-icon.png";
 import MyStats from "./MyStats";
 
-//PROPS: Object() groupData, Function() getGroupAdminData, Array[] recentActivity, Array[] allUsers, Date() lastViewed, Object() privateGroupSettings, String groupName, Number limit, Function() getLastViewed (only to get the initial last viewed from firestore. Only call it in componentDidMount())
+/*PROPS:
+ Object() groupData, 
+ Function() getGroupAdminData, 
+ Array[] recentActivity, 
+ Array[] allUsers, 
+ Date() lastViewed, 
+ Object() privateGroupSettings, 
+ String groupName, 
+ Number limit, 
+ Function() getLastViewed (only to get the initial last viewed from firestore. Only call it in componentDidMount())
+*/
 class GroupAdmin extends React.Component {
   constructor() {
     super();
