@@ -974,7 +974,7 @@ async function checkIfAdmin(platformId, userId) {
 }
 //returns a boolean
 
-//data: {platformId: , eventId: }
+//data: {platformId: , eventId:, groupId:  }
 exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
   //Step 1: first check if the user is logged in, and get the event doc (for name and description, also checking if platform and event ids are valid)
   if (!context.auth.uid) return { isError: true, errorType: 6 };
@@ -996,7 +996,8 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
   var userRecords = await getUserRecords(
     data.platformId,
     context.auth.uid,
-    data.eventId
+    data.eventId,
+    data.groupId
   );
   if (userRecords.isNotFound)
     return { isError: true, errorType: 5, userId: context.auth.uid };
@@ -1143,7 +1144,7 @@ An object with properties:
 
 //check to prevent double doing the rounds, and get the groupId
 //true: OK, is first time; false: already did this event;
-async function getUserRecords(platformId, userId, eventId) {
+async function getUserRecords(platformId, userId, eventId, groupId) {
   //first get the group id from the user doc.
   var userData = await db
     .collection("platforms")
@@ -1155,27 +1156,26 @@ async function getUserRecords(platformId, userId, eventId) {
 
   //then get the records, if any.
 
-  var currentGroup = userData.data().currentGroup;
-  if (!currentGroup) return { isNotFound: true };
+  if (!groupId) return { isNotFound: true };
   var records = await db
     .collection("platforms")
     .doc(platformId)
     .collection("users")
     .doc(userId)
-    .collection(currentGroup)
+    .collection(groupId)
     .doc(eventId)
     .get();
   if (!records.exists)
-    return { isNotFound: false, isFirstTime: true, groupId: currentGroup };
+    return { isNotFound: false, isFirstTime: true, groupId: groupId };
   return {
     isNotFound: false,
     isFirstTime: false,
-    groupId: currentGroup,
+    groupId: groupId,
     records: records.data(),
   };
 }
 //returns {isNotFound: , isFirstTime: , groupId: }
-//will return isNotFound as true if either there is no document for that user, OR if the currentGroup is null.
+//will return isNotFound as true if either there is no document for that user, OR if the groupId is null.
 
 async function generateQuestionFromDB(
   question,
@@ -1442,7 +1442,7 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
     .collection("users")
     .doc(context.auth.uid)
     .get();
-  var group = userData.data().currentGroup;
+  var group = data.groupId;
   //if the group is null, then no group is joined
   if (!group) return { isError: true, errorType: 5 };
 

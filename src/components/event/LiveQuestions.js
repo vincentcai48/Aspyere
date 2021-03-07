@@ -34,23 +34,30 @@ class LiveQuestions extends React.Component {
       countDown: 0,
       instructionsText: "",
       showInstructions: false,
+      platformId: "",
+      groupId: "",
     };
   }
 
   componentDidMount() {
     var urlParams = new URLSearchParams(window.location.search);
-    var platform, eventId;
+    var platform, eventId, groupId;
     if (urlParams.has("platform")) {
       platform = urlParams.get("platform");
     }
     if (urlParams.has("event")) {
       eventId = urlParams.get("event");
     }
+    if (urlParams.has("group")) {
+      groupId = urlParams.get("group");
+    }
+
     this.setState({
       platformId: platform,
       eventId: eventId,
+      groupId: groupId,
     });
-    this.getLiveQuestions(platform, eventId);
+    this.getLiveQuestions(platform, eventId, groupId);
     this.countDown();
 
     pFirestore
@@ -84,11 +91,12 @@ class LiveQuestions extends React.Component {
     }
   };
 
-  getLiveQuestions = (platformId, eventId) => {
+  getLiveQuestions = (platformId, eventId, groupId) => {
     var getLiveQuestions = pFunctions.httpsCallable("getLiveQuestions");
     getLiveQuestions({
       platformId: platformId,
       eventId: eventId,
+      groupId: groupId,
     })
       .then((data) => {
         if (data.data.isError) {
@@ -178,6 +186,7 @@ class LiveQuestions extends React.Component {
     submitAnswers({
       eventId: this.state.eventId,
       platformId: this.state.platformId,
+      groupId: this.state.groupId,
       answers: this.state.answers,
     })
       .then((r) => {
@@ -190,7 +199,11 @@ class LiveQuestions extends React.Component {
           });
         } else {
           //Then update to show feedback instead of Live Questions
-          this.getLiveQuestions(this.state.platformId, this.state.eventId);
+          this.getLiveQuestions(
+            this.state.platformId,
+            this.state.eventId,
+            this.state.groupId
+          );
         }
       })
       .catch((e) => {
@@ -249,7 +262,7 @@ class LiveQuestions extends React.Component {
                     className="sb back-to-platform-button"
                     onClick={() =>
                       this.setState({
-                        redirect: `/platform?id=${this.state.platformId}`,
+                        redirect: `/platform?id=${this.state.platformId}&group=${this.state.groupId}`,
                       })
                     }
                   >
@@ -300,7 +313,7 @@ class LiveQuestions extends React.Component {
                     className="arrow-button back-button"
                     onClick={() =>
                       this.setState({
-                        redirect: `/platform?id=${this.state.platformId}`,
+                        redirect: `/platform?id=${this.state.platformId}&group=${this.state.groupId}`,
                       })
                     }
                   >

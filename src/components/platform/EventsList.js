@@ -6,7 +6,19 @@ import { displayTime } from "../../services/globalFunctions";
 import Loading from "../Loading";
 import EditEvent from "./EditEvent";
 
-//PROPS: Boolean isAdmin, Object dbMapping, Object userData, Function getAllEvents(), Function getPastEvents(), Array[] allEvents, Array[] pastEvents, Function() refreshAllEvents(), Function refreshPastEvents()
+/*PROPS: 
+Boolean isAdmin, 
+Object dbMapping, 
+Object userData, 
+Function getAllEvents(), 
+Function getPastEvents(), 
+Array[] allEvents, 
+Array[] pastEvents, 
+Function() refreshAllEvents(), 
+Function refreshPastEvents(),
+String platformId,
+String groupId,
+*/
 class EventsList extends React.Component {
   constructor() {
     super();
@@ -98,7 +110,7 @@ class EventsList extends React.Component {
   };
 
   beginEventProxy = (eventId) => {
-    const url = `/questions?event=${eventId}&platform=${this.context.platform}`;
+    const url = `/questions?event=${eventId}&platform=${this.props.platformId}&group=${this.props.groupId}`;
     this.setState({ redirect: url });
   };
 

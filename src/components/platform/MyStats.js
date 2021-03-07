@@ -31,7 +31,7 @@ class MyStats extends React.Component {
   };
 
   render() {
-    var d = this.props.userData;
+    var d = this.props.myStats;
     var isNoStats = false;
     var weeks = d.startTime
       ? Math.abs(

@@ -64,7 +64,10 @@ class GroupAdmin extends React.Component {
       inputJoinCode: this.props.privateGroupSettings.joinCode,
       inputDifficulty: this.props.groupData.difficulty,
     });
-    this.props.getLastViewed(this.props.groupData.id);
+
+    //DO THIS IN PLATFORM.JS, ONLY IF ADMIN THOUGH.
+    //this.props.getLastViewed(this.props.groupData.id);
+
     // var doc = await pFirestore
     //   .collection("platforms")
     //   .doc(this.context.platform)

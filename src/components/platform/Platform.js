@@ -28,6 +28,7 @@ class Platform extends React.Component {
       platformSettings: {},
       groupData: {},
       userData: {},
+      myStats: {}, //specific to a group
       menuOption: 2, //0: Platform Admin, 1: Group Admin, 2: Events, 3: My Stats
       doesNotExist: false,
       privateSettings: {},
@@ -59,13 +60,14 @@ class Platform extends React.Component {
     };
   }
 
-  async componentDidMount() {
+  async componentDidMount(isOverride, newPId, newGId) {
     //Step 1: get the url param id and set to a var in state.
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     //check if has a platform id
+    var pId = "";
     if (urlParams.has("id")) {
-      const pId = urlParams.get("id");
+      pId = urlParams.get("id");
       this.setState({ platformId: pId });
     } else {
       return this.setState({
@@ -75,10 +77,11 @@ class Platform extends React.Component {
     }
 
     //check if has a group id
+    var gId;
     if (urlParams.has("group")) {
-      const gId = urlParams.get("group");
+      gId = urlParams.get("group");
     } else {
-      const gId = null;
+      gId = null;
     }
     this.setState({ groupId: gId });
 
@@ -103,13 +106,26 @@ class Platform extends React.Component {
           });
           this.context.setPlatformName(doc.data().name);
 
-          //Here we get the group data (if a group a joined). One-time get this data.
+          //Here we get the group and user data (if a group a joined). One-time get this data.
           //first time, get this data just once. Snapshot listener updates when platform settings change. You don't want to do all this everytime the platform admin settings update.
           if (isFirstTime) {
+            //Step 3: get user data:
+            var userData = await pFirestore
+              .collection("platforms")
+              .doc(pId)
+              .collection("users")
+              .doc(pAuth.currentUser.uid)
+              .get();
+            if (userData.exists) {
+              this.setState({ userData: userData.data() });
+            }
+
             //Check if there is a group
             if (gId) {
-              //then get this group's info.
+              //then get the group info
               this.getGroupData(gId);
+            } else {
+              this.setState({ isLoadingPlatform: false });
             }
 
             if (isAdmin) this.getPrivateSettings();
@@ -128,11 +144,11 @@ class Platform extends React.Component {
 
     //increment the view count of this platform
     try {
-      if (this.context.platform) {
+      if (pId) {
         var incrementPlatformViews = pFunctions.httpsCallable(
           "incrementPlatformViews"
         );
-        await incrementPlatformViews({ platformId: this.context.platform });
+        await incrementPlatformViews({ platformId: pId });
       }
     } catch (e) {
       console.error(e);
@@ -143,18 +159,20 @@ class Platform extends React.Component {
   getGroupData = async (groupId) => {
     await pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.state.platformId)
       .collection("groups")
       .doc(groupId)
       .get()
       .then(async (doc) => {
-        if (!doc.exists) this.setState({ isGroupNotExist: true });
+        if (!doc.exists)
+          this.setState({ isGroupNotExist: true, isLoadingPlatform: false });
+        var isGroupAdmin =
+          doc.data().admins &&
+          doc.data().admins.includes(pAuth.currentUser.uid);
         this.setState({
           groupData: { ...doc.data(), id: doc.id },
-          groupMembers: doc.data()["members"],
-          isGroupAdmin:
-            doc.data().admins &&
-            doc.data().admins.includes(pAuth.currentUser.uid),
+          groupMembers: doc.data()["members"] || [],
+          isGroupAdmin: isGroupAdmin,
           menuOption:
             doc.data().admins &&
             doc.data().admins.includes(pAuth.currentUser.uid)
@@ -162,23 +180,45 @@ class Platform extends React.Component {
               : 2,
         });
 
-        //then get private group settings (group join code etc...)
-        await pFirestore
+        //Get MySTATS too
+        var myStats = await pFirestore
           .collection("platforms")
-          .doc(this.context.platform)
-          .collection("privateSettings")
-          .doc(groupId)
-          .get()
-          .then((pgs) => {
-            if (pgs.exists) {
-              this.setState({ privateGroupSettings: pgs.data() });
-            }
-          })
-          .catch((e) => console.error(e));
+          .doc(this.state.platformId)
+          .collection("users")
+          .doc(pAuth.currentUser.uid)
+          .collection(groupId)
+          .doc("userData")
+          .get();
+        this.setState({ myStats: myStats.data() });
+
+        if (isGroupAdmin) {
+          //then get private group settings (group join code etc...)
+          await pFirestore
+            .collection("platforms")
+            .doc(this.state.platformId)
+            .collection("privateSettings")
+            .doc(groupId)
+            .get()
+            .then((pgs) => {
+              if (pgs.exists) {
+                this.setState({
+                  privateGroupSettings: pgs.data(),
+                  isLoadingPlatform: false,
+                });
+              }
+            })
+            .catch((e) => console.error(e));
+
+          //AND recent activity as well
+          this.getLastViewed(doc.id);
+        } else {
+          //else stop the loading
+          this.setState({ isLoadingPlatform: false });
+        }
       })
       .catch((e) => {
         //if the group NO Longer exists
-        this.setState({ groupId: null });
+        this.setState({ groupId: null, isLoadingPlatform: false });
       });
   };
 
@@ -247,13 +287,6 @@ class Platform extends React.Component {
 
   //where you update the group users by using the last "true" parameter in getGroupAdminData
   getLastViewed = async (groupId) => {
-    // var doc = await pFirestore
-    //   .collection("platforms")
-    //   .doc(this.context.platform)
-    //   .collection("users")
-    //   .doc(pAuth.currentUser.uid)
-    //   .get();
-
     var fieldName = "lastViewedGroupAdmin" + groupId;
     var lastViewed = this.state.userData[fieldName]
       ? this.state.userData[fieldName].toDate()
@@ -264,7 +297,7 @@ class Platform extends React.Component {
     await this.getGroupAdminData(lastViewed, new Date(), true);
     var updateUserViewTime = pFunctions.httpsCallable("updateUserViewTime");
     updateUserViewTime({
-      platformId: this.context.platform,
+      platformId: this.state.platformId,
       fieldName: fieldName,
     })
       .then(() => {})
@@ -288,22 +321,18 @@ class Platform extends React.Component {
   //   return arr;
   // };
 
+  //A bit of a misnomer, should be "GET RECENT ACTIVITY"
   //pass in a date object to get all records after that. Call everytime you want to add 7 days. (or however many days)
-  getGroupAdminData = async (startDate, endDate, isRefreshUsers) => {
+  getGroupAdminData = async (startDate, endDate, isRefresh) => {
     var start = fbTimestamp.fromDate(startDate);
     var end = fbTimestamp.fromDate(endDate);
-    var users;
-    if (this.state.groupMembers.length == 0 || isRefreshUsers) {
-      users = await this.getAllGroupUsers();
-    } else {
-      users = [...this.state.groupMembers];
-    }
+    var users = [...this.state.groupMembers];
     var allRecords = [];
     users.forEach((user) => {
       allRecords.push(
         pFirestore
           .collection("platforms")
-          .doc(this.context.platform)
+          .doc(this.state.platformId)
           .collection("users")
           .doc(user)
           .collection(this.state.groupData.id)
@@ -327,6 +356,7 @@ class Platform extends React.Component {
       });
 
       var newArr = [...this.state.recentActivity];
+      //if (isRefresh) newArr = [];
       //to ensure no duplicates
       recentActivity.forEach((a) => {
         if (!newArr.includes(a)) {
@@ -344,7 +374,7 @@ class Platform extends React.Component {
     try {
       pFirestore
         .collection("platforms")
-        .doc(this.context.platform)
+        .doc(this.state.platformId)
         .collection("privateSettings")
         .doc("privateSettings")
         .onSnapshot((doc) => {
@@ -375,23 +405,6 @@ class Platform extends React.Component {
     });
   };
 
-  //queries all groups and sees if it is an admin, does NOT see if admin for whole platform, see the
-  accessPrivileges = () => {
-    // pFirestore
-    //   .collection("platforms")
-    //   .doc(this.context.platform)
-    //   .collection("groups")
-    //   .where("admins", "array-contains", pAuth.currentUser.uid)
-    //   .get()
-    //   .then((groups) => {
-    //     var arr = [];
-    //     groups.forEach((g) => {
-    //       arr.push({ ...g.data(), id: g.id });
-    //     });
-    //     this.setState({ adminGroups: arr });
-    //   });
-  };
-
   //gets all current events
   //call this first time AND also EVERY pagination.
   getAllEvents = async (isRefresh) => {
@@ -400,7 +413,7 @@ class Platform extends React.Component {
     var allEvents;
     var query = pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.state.platformId)
       .collection("events")
       .where("endTime", ">=", nowTime)
       .orderBy("endTime", "asc");
@@ -434,7 +447,7 @@ class Platform extends React.Component {
     var allEvents;
     var query = pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.state.platformId)
       .collection("events")
       .where("endTime", "<", nowTime)
       .orderBy("endTime", "desc");
@@ -469,7 +482,7 @@ class Platform extends React.Component {
 
     var query = pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.state.platformId)
       .collection("users")
       .doc(pAuth.currentUser.uid)
       .collection(groupId)
@@ -521,7 +534,7 @@ class Platform extends React.Component {
   unjoin = () => {
     this.setState({ isUnjoinLoading: true });
     var unjoinGroup = pFunctions.httpsCallable("unjoinGroup");
-    unjoinGroup({ platformId: this.context.platform })
+    unjoinGroup({ platformId: this.state.platformId })
       .then(() => {
         this.setState({
           isUnjoinLoading: false,
@@ -551,8 +564,15 @@ class Platform extends React.Component {
     }
   };
 
+  redirectWithRefresh = (redirect) => {
+    window.location = redirect;
+  };
+
   render() {
-    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
+    console.log(this.state.groupId);
+    if (this.state.redirect) {
+      return <Redirect to={this.state.redirect} />;
+    }
     if (this.state.isLoadingPlatform)
       return (
         <div>
@@ -602,13 +622,15 @@ class Platform extends React.Component {
             pastEvents={this.state.pastEvents}
             refreshAllEvents={this.refreshAllEvents}
             refreshPastEvents={this.refreshPastEvents}
+            platformId={this.state.platformId}
+            groupId={this.state.groupId}
           />
         );
         break;
       case 3:
         mainComponent = (
           <MyStats
-            userData={this.state.userData}
+            myStats={this.state.myStats}
             groupName={this.state.platformSettings.groupName}
             completedEvents={this.state.completedEvents}
             getCompletedEvents={this.getCompletedEvents}
@@ -710,7 +732,14 @@ class Platform extends React.Component {
                   ))}
               </ul>
               <div className="last-row">
-                <button className="sb unjoin-button" onClick={this.unjoin}>
+                <button
+                  className="sb unjoin-button"
+                  onClick={() =>
+                    this.redirectWithRefresh(
+                      `/platform?id=${this.state.platformId}`
+                    )
+                  }
+                >
                   Switch{" "}
                   {this.state.groupData && this.state.groupData.groupName}
                 </button>
@@ -784,6 +813,7 @@ class Platform extends React.Component {
               publicJoin={this.state.platformSettings.publicJoin}
               platformSettings={this.state.platformSettings}
               dbMapping={this.state.dbMapping}
+              redirectWithRefresh={this.redirectWithRefresh}
             />
           </div>
         )}

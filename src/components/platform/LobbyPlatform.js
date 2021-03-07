@@ -20,6 +20,7 @@ Object() privateSettings,
 Boolean publicJoin, 
 Object() platformSettings.
 Object() dbMapping, (just to pass into PlatformAdmin)
+function() redirectWithRefresh()
 
 
 */
@@ -74,20 +75,20 @@ class LobbyPlatform extends React.Component {
   };
 
   joinGroup = async (groupId) => {
-    //Step 1: check if individually joining:
-    if (groupId == "individual") {
-      return this.joinIndividually();
-    }
-
-    //Step 2: check if already joined the group, then just do a redirect.
+    //Step 1: check if already joined the group, then just do a redirect. (even if it's individual)
     if (
       this.props.userData &&
       this.props.userData.joinedGroups &&
       this.props.userData.joinedGroups.includes(groupId)
     ) {
-      return this.setState({
-        redirect: `/platform?id=${this.props.platformSettings.id}&group=${groupId}`,
-      });
+      return this.props.redirectWithRefresh(
+        `/platform?id=${this.props.platformSettings.id}&group=${groupId}`
+      );
+    }
+
+    //Step 2: check if individually joining, use the cloud function.
+    if (groupId == "individual") {
+      return this.joinIndividually();
     }
 
     //Step 3: this means you're joined for the first time, and use the cloud function.
@@ -105,6 +106,9 @@ class LobbyPlatform extends React.Component {
       if (isValid) {
         await this.props.checkJoinedStatus(this.props.requireGroup);
         this.setState({ isLoading: false });
+        this.props.redirectWithRefresh(
+          `/platform?id=${this.props.platformSettings.id}&group=${groupId}`
+        );
       }
     } catch (e) {
       this.setState({ isLoading: false, showAccessError: true });
@@ -124,6 +128,9 @@ class LobbyPlatform extends React.Component {
       } else {
         await this.props.checkJoinedStatus(this.props.requireGroup);
         this.state({ isLoading: false });
+        this.props.redirectWithRefresh(
+          `/platform?id=${this.props.platformSettings.id}&group=individual`
+        );
       }
     } catch (e) {
       this.setState({ showAccessError: true, isLoading: false });
@@ -243,7 +250,7 @@ class LobbyPlatform extends React.Component {
                       )) ||
                     this.props.publicJoin
                   ) {
-                    this.joinIndividually();
+                    this.joinGroup("individual");
                   } else {
                     this.setState({ groupToJoin: "individual" });
                   }
