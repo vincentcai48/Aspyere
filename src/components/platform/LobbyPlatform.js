@@ -74,9 +74,23 @@ class LobbyPlatform extends React.Component {
   };
 
   joinGroup = async (groupId) => {
+    //Step 1: check if individually joining:
     if (groupId == "individual") {
       return this.joinIndividually();
     }
+
+    //Step 2: check if already joined the group, then just do a redirect.
+    if (
+      this.props.userData &&
+      this.props.userData.joinedGroups &&
+      this.props.userData.joinedGroups.includes(groupId)
+    ) {
+      return this.setState({
+        redirect: `/platform?id=${this.props.platformSettings.id}&group=${groupId}`,
+      });
+    }
+
+    //Step 3: this means you're joined for the first time, and use the cloud function.
     this.setState({ isLoading: true, showAccessError: false });
     var cloudJoinGroup = pFunctions.httpsCallable("joinGroup");
     try {

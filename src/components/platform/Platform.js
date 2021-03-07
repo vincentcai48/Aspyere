@@ -21,7 +21,7 @@ class Platform extends React.Component {
     super();
     this.state = {
       isLoadingPlatform: true, //set to false when done loading. Set it when you set isJoined
-      isJoined: false,
+      //isJoined: false, //just use groupId, if null or not
       isGroupNotExist: false,
       isGroupAdmin: false, //is admin of this group.
       isAdmin: false, //if admin of whole platform
@@ -35,7 +35,7 @@ class Platform extends React.Component {
       dbMapping: {}, //just for admin, see componentDidMount()
       isUnjoinError: false,
       isUnjoinLoading: false,
-      allGroupUsers: [], //array of all users in this group, only fill out if groupAdmin,
+      groupMembers: [], //array of all users in this group, only fill out if groupAdmin,
       recentActivity: [],
       lastViewed: new Date(),
       unsubscribe: () => {},
@@ -55,6 +55,7 @@ class Platform extends React.Component {
       //platform options:
       showOptions: false,
       platformId: "",
+      groupId: null,
     };
   }
 
@@ -62,8 +63,24 @@ class Platform extends React.Component {
     //Step 1: get the url param id and set to a var in state.
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    const pId = urlParams.get("id");
-    this.setState({ platformId: pId });
+    //check if has a platform id
+    if (urlParams.has("id")) {
+      const pId = urlParams.get("id");
+      this.setState({ platformId: pId });
+    } else {
+      return this.setState({
+        doesNotExist: true,
+        isLoadingPlatform: false,
+      });
+    }
+
+    //check if has a group id
+    if (urlParams.has("group")) {
+      const gId = urlParams.get("group");
+    } else {
+      const gId = null;
+    }
+    this.setState({ groupId: gId });
 
     //Step 2: get all the data from the platform
     var isFirstTime = true;
@@ -72,6 +89,7 @@ class Platform extends React.Component {
         .collection("platforms")
         .doc(pId)
         .onSnapshot(async (doc) => {
+          //Here we set all the platform data.
           if (!doc.exists)
             return this.setState({
               doesNotExist: true,
@@ -85,10 +103,14 @@ class Platform extends React.Component {
           });
           this.context.setPlatformName(doc.data().name);
 
+          //Here we get the group data (if a group a joined). One-time get this data.
           //first time, get this data just once. Snapshot listener updates when platform settings change. You don't want to do all this everytime the platform admin settings update.
           if (isFirstTime) {
-            //isJoined will then getGroupData, which will then getLastViewed.
-            await this.isJoined(doc.data().requireGroup);
+            //Check if there is a group
+            if (gId) {
+              //then get this group's info.
+              this.getGroupData(gId);
+            }
 
             if (isAdmin) this.getPrivateSettings();
             isFirstTime = false;
@@ -117,69 +139,107 @@ class Platform extends React.Component {
     }
   }
 
-  //returns true or false if the user is in the platform or not
-  //ALSO sets usersettings when it calls the database.
-  isJoined = async (requireGroup) => {
-    var doc = await pFirestore
+  //Just gets the group data (and privateData if an admin)
+  getGroupData = async (groupId) => {
+    await pFirestore
       .collection("platforms")
       .doc(this.context.platform)
-      .collection("users")
-      .doc(pAuth.currentUser.uid)
-      .get();
-    if (!doc.exists) {
-      return this.setState({ isJoined: false, isLoadingPlatform: false });
-    } else {
-      if (requireGroup) {
-        //var userInfo = await pFirestore.collection("users").doc(pAuth.currentUser.uid).get();
-        if (!doc.data().currentGroup) {
-          return this.setState({
-            isLoadingPlatform: false,
-            isJoined: false,
-            userData: { ...doc.data() },
-          });
-        } else {
-          await this.getGroupData(doc.data().currentGroup);
-          var userDataInGroup = await doc.ref
-            .collection(doc.data().currentGroup)
-            .doc("userData")
-            .get();
-
-          return this.setState({
-            isLoadingPlatform: false,
-            isJoined: true,
-            userData: { ...doc.data(), ...userDataInGroup.data() },
-          });
-        }
-      } else {
-        //still need this, because even if you join indiidually, currentGroup is set to "individual", NOT null
-        if (!doc.data().currentGroup) {
-          return this.setState({
-            isLoadingPlatform: false,
-            isJoined: false,
-            userData: { ...doc.data() },
-          });
-        }
-        if (doc.data().currentGroup !== "individual") {
-          //only do this if not individual join, or else it will say the group doesn't exists.
-          await this.getGroupData(doc.data().currentGroup);
-        } else {
-          this.setState({ isGroupAdmin: false, menuOption: 2 });
-        }
-
-        //STILL do this for individual join, because there is still userData (aka the stats) for joining individually.
-        var userDataInGroup = await doc.ref
-          .collection(doc.data().currentGroup)
-          .doc("userData")
-          .get();
-
-        return this.setState({
-          isLoadingPlatform: false,
-          isJoined: true,
-          userData: { ...doc.data(), ...userDataInGroup.data() },
+      .collection("groups")
+      .doc(groupId)
+      .get()
+      .then(async (doc) => {
+        if (!doc.exists) this.setState({ isGroupNotExist: true });
+        this.setState({
+          groupData: { ...doc.data(), id: doc.id },
+          groupMembers: doc.data()["members"],
+          isGroupAdmin:
+            doc.data().admins &&
+            doc.data().admins.includes(pAuth.currentUser.uid),
+          menuOption:
+            doc.data().admins &&
+            doc.data().admins.includes(pAuth.currentUser.uid)
+              ? 1
+              : 2,
         });
-      }
-    }
+
+        //then get private group settings (group join code etc...)
+        await pFirestore
+          .collection("platforms")
+          .doc(this.context.platform)
+          .collection("privateSettings")
+          .doc(groupId)
+          .get()
+          .then((pgs) => {
+            if (pgs.exists) {
+              this.setState({ privateGroupSettings: pgs.data() });
+            }
+          })
+          .catch((e) => console.error(e));
+      })
+      .catch((e) => {
+        //if the group NO Longer exists
+        this.setState({ groupId: null });
+      });
   };
+
+  // //returns true or false if the user is in the platform or not
+  // //ALSO sets usersettings when it calls the database.
+  // isJoined = async (requireGroup) => {
+  //   var doc = await pFirestore
+  //     .collection("platforms")
+  //     .doc(this.context.platform)
+  //     .collection("users")
+  //     .doc(pAuth.currentUser.uid)
+  //     .get();
+  //   if (!doc.exists) {
+  //     return this.setState({ isJoined: false, isLoadingPlatform: false });
+  //   } else {
+  //     //If never joined a group, just default to the lobby.
+  //     if (doc.data().joinedGroups.length < 1) {
+  //       return this.setState({
+  //         isLoadingPlatform: false,
+  //         isJoined: false,
+  //         userData: { ...doc.data() },
+  //       });
+  //     }
+
+  //     //what to immediately redirect to if there is a default group.
+  //     var defaultGroup = doc.data().joinedGroups[0];
+
+  //     if (requireGroup) {
+  //       await this.getGroupData(defaultGroup);
+  //       var userDataInGroup = await doc.ref
+  //         .collection(doc.data().currentGroup)
+  //         .doc("userData")
+  //         .get();
+  //       return this.setState({
+  //         isLoadingPlatform: false,
+  //         isJoined: true,
+  //         userData: { ...doc.data(), ...userDataInGroup.data() },
+  //       });
+  //     } else {
+  //       //still need this, because even if you join indiidually, currentGroup is set to "individual", NOT null
+  //       if (doc.data().currentGroup !== "individual") {
+  //         //only do this if not individual join, or else it will say the group doesn't exists.
+  //         await this.getGroupData(doc.data().currentGroup);
+  //       } else {
+  //         this.setState({ isGroupAdmin: false, menuOption: 2 });
+  //       }
+
+  //       //STILL do this for individual join, because there is still userData (aka the stats) for joining individually.
+  //       var userDataInGroup = await doc.ref
+  //         .collection(doc.data().currentGroup)
+  //         .doc("userData")
+  //         .get();
+
+  //       return this.setState({
+  //         isLoadingPlatform: false,
+  //         isJoined: true,
+  //         userData: { ...doc.data(), ...userDataInGroup.data() },
+  //       });
+  //     }
+  //   }
+  // };
 
   componentWillUnmount() {
     this.state.unsubscribe();
@@ -211,31 +271,32 @@ class Platform extends React.Component {
       .catch((e) => console.error(e));
   };
 
-  //only for Group Admin.
-  getAllGroupUsers = async () => {
-    var allUsers = await pFirestore
-      .collection("platforms")
-      .doc(this.context.platform)
-      .collection("users")
-      .where("currentGroup", "==", this.state.groupData.id)
-      .get();
-    var arr = [];
-    allUsers.docs.forEach((user) => {
-      arr.push({ id: user.id, data: user.data() });
-    });
-    this.setState({ allGroupUsers: arr });
-    return arr;
-  };
+  //NO NEED FOR THIS ANYMORE, just use the "members" array on the group doc.
+  // //only for Group Admin.
+  // getAllGroupUsers = async () => {
+  //   var allUsers = await pFirestore
+  //     .collection("platforms")
+  //     .doc(this.context.platform)
+  //     .collection("users")
+  //     .where("currentGroup", "==", this.state.groupData.id)
+  //     .get();
+  //   var arr = [];
+  //   allUsers.docs.forEach((user) => {
+  //     arr.push({ id: user.id, data: user.data() });
+  //   });
+  //   this.setState({ allGroupUsers: arr });
+  //   return arr;
+  // };
 
   //pass in a date object to get all records after that. Call everytime you want to add 7 days. (or however many days)
   getGroupAdminData = async (startDate, endDate, isRefreshUsers) => {
     var start = fbTimestamp.fromDate(startDate);
     var end = fbTimestamp.fromDate(endDate);
     var users;
-    if (this.state.allGroupUsers.length == 0 || isRefreshUsers) {
+    if (this.state.groupMembers.length == 0 || isRefreshUsers) {
       users = await this.getAllGroupUsers();
     } else {
-      users = [...this.state.allGroupUsers];
+      users = [...this.state.groupMembers];
     }
     var allRecords = [];
     users.forEach((user) => {
@@ -244,7 +305,7 @@ class Platform extends React.Component {
           .collection("platforms")
           .doc(this.context.platform)
           .collection("users")
-          .doc(user.id)
+          .doc(user)
           .collection(this.state.groupData.id)
           .where("timeSubmitted", ">=", start)
           .where("timeSubmitted", "<=", end)
@@ -312,47 +373,6 @@ class Platform extends React.Component {
         }
       }
     });
-  };
-
-  getGroupData = async (groupId) => {
-    await pFirestore
-      .collection("platforms")
-      .doc(this.context.platform)
-      .collection("groups")
-      .doc(groupId)
-      .get()
-      .then(async (doc) => {
-        if (!doc.exists) this.setState({ isGroupNotExist: true });
-        this.setState({
-          groupData: { ...doc.data(), id: doc.id },
-          isGroupAdmin:
-            doc.data().admins &&
-            doc.data().admins.includes(pAuth.currentUser.uid),
-          menuOption:
-            doc.data().admins &&
-            doc.data().admins.includes(pAuth.currentUser.uid)
-              ? 1
-              : 2,
-        });
-
-        //then get private group settings (group join code etc...)
-        await pFirestore
-          .collection("platforms")
-          .doc(this.context.platform)
-          .collection("privateSettings")
-          .doc(groupId)
-          .get()
-          .then((pgs) => {
-            if (pgs.exists) {
-              this.setState({ privateGroupSettings: pgs.data() });
-            }
-          })
-          .catch((e) => console.error(e));
-      })
-      .catch((e) => {
-        //if the group NO Longer exists
-        this.setState({ isJoined: false });
-      });
   };
 
   //queries all groups and sees if it is an admin, does NOT see if admin for whole platform, see the
@@ -505,7 +525,7 @@ class Platform extends React.Component {
       .then(() => {
         this.setState({
           isUnjoinLoading: false,
-          isJoined: false,
+          groupId: null,
           groupData: {},
           isGroupNotExist: false,
         });
@@ -540,7 +560,7 @@ class Platform extends React.Component {
         </div>
       );
     var accessLevel = 0;
-    if (this.state.isJoined) accessLevel += 2;
+    if (this.state.groupId) accessLevel += 2;
     if (this.state.isGroupAdmin) accessLevel++;
     if (this.state.isAdmin) accessLevel++;
     var mainComponent;
@@ -560,7 +580,7 @@ class Platform extends React.Component {
             groupData={this.state.groupData}
             getGroupAdminData={this.getGroupAdminData}
             recentActivity={this.state.recentActivity}
-            allUsers={this.state.allGroupUsers}
+            allUsers={this.state.groupMembers}
             lastViewed={this.state.lastViewed}
             setLastViewed={(v) => this.setState({ lastViewed: v })}
             privateGroupSettings={this.state.privateGroupSettings}
@@ -660,7 +680,8 @@ class Platform extends React.Component {
           </div>
         )}
 
-        {this.state.isJoined ? (
+        {/* IF THERE IS A GROUP-ID (aka you joined a group), show the pages. Otherwise, show the lobby */}
+        {this.state.groupId ? (
           <div id="joined-platform">
             <div
               id="group-header"
@@ -757,7 +778,7 @@ class Platform extends React.Component {
               groupOptionsOn={this.state.platformSettings.groupOptionsOn}
               groupName={this.state.platformSettings.groupName}
               setMenuOption={(a) => this.setState({ menuOption: a })}
-              checkJoinedStatus={this.isJoined}
+              checkJoinedStatus={() => (this.state.groupId ? true : false)}
               userData={this.state.userData}
               privateSettings={this.state.privateSettings}
               publicJoin={this.state.platformSettings.publicJoin}

@@ -414,24 +414,24 @@ class GroupAdmin extends React.Component {
                   if (this.props.groupData.admins.includes(b.id)) return 1;
                   return 1;
                 })
-                .map((user) => {
+                .map((userId) => {
                   return (
-                    <li key={user.id}>
+                    <li key={userId}>
                       <div className="li-main">
                         <div className="member-name">
                           <img className="person-icon" src={personIcon} />
-                          {this.context.usersMapping[user.id]}
+                          {this.context.usersMapping[userId]}
                         </div>
                         <div>
                           {this.props.groupData &&
                           this.props.groupData.admins &&
-                          this.props.groupData.admins.includes(user.id) ? (
+                          this.props.groupData.admins.includes(userId) ? (
                             <span className="admin-label">Admin</span>
                           ) : (
                             <button
                               className="promote-admin"
                               onClick={() =>
-                                this.setState({ userToPromote: user.id })
+                                this.setState({ userToPromote: userId })
                               }
                             >
                               Promote to Admin
@@ -441,7 +441,7 @@ class GroupAdmin extends React.Component {
                         <div>
                           <button
                             className="sb"
-                            onClick={() => this.openStatsPage(user.id)}
+                            onClick={() => this.openStatsPage(userId)}
                           >
                             View Stats Page
                           </button>
