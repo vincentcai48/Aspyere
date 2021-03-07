@@ -4,8 +4,25 @@ import { PContext } from "../../services/context";
 import Loading from "../Loading";
 import personIcon from "../../images/person-icon.png";
 import { Redirect } from "react-router";
+import PlatformAdmin from "./PlatformAdmin";
 
-//PROPS: Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), String groupName (what to call a "group". Eg: a "class"), Boolean requireGroup, Boolean publicCreateGroup, Boolean groupOptionsOn, Array[] groupOptions, Function() checkJoinedStatus (to use when you join), Function() setMenuOption, Object() privateSettings, Boolean publicJoin, Object() platformSettings.
+/*
+PROPS: 
+Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), 
+String groupName (what to call a "group". Eg: a "class"), 
+Boolean requireGroup, 
+Boolean publicCreateGroup, 
+Boolean groupOptionsOn, 
+Array[] groupOptions, 
+Function() checkJoinedStatus (to use when you join), 
+Function() setMenuOption, 
+Object() privateSettings, 
+Boolean publicJoin, 
+Object() platformSettings.
+Object() dbMapping, (just to pass into PlatformAdmin)
+
+
+*/
 class LobbyPlatform extends React.Component {
   constructor() {
     super();
@@ -25,6 +42,7 @@ class LobbyPlatform extends React.Component {
       inputIsPublic: false,
       inputJoinCode: "",
       showJoinedBefore: true,
+      showAdmin: false,
       //storedCreateGroupCode: null, //to use to store the code, after it has been checked
     };
   }
@@ -167,6 +185,19 @@ class LobbyPlatform extends React.Component {
             <i className="fas fa-home"></i>Platform Homepage
           </span>
           <h2 id="lobbyHeader-name">{this.props.platformSettings.name}</h2>
+          {this.props.platformSettings.admins &&
+            this.props.platformSettings.admins.includes(
+              pAuth.currentUser.uid
+            ) && (
+              <button
+                className="lobby-admin"
+                onClick={() =>
+                  this.setState((p) => ({ showAdmin: !p.showAdmin }))
+                }
+              >
+                Admin Settings
+              </button>
+            )}
         </section>
         <div id="lobbyPlatform-main">
           <div id="platform-info">
@@ -493,6 +524,31 @@ class LobbyPlatform extends React.Component {
             </div>
           )}
         </div>
+
+        {this.state.showAdmin && (
+          <div className="grayed-out-background">
+            <div className="fsp">
+              <div className="fsp-header">
+                <h2>Platform Admin</h2>
+                <div className="side-buttons">
+                  <button
+                    className="cancel-button"
+                    onClick={() => this.setState({ showAdmin: false })}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+              <div className="fsp-main">
+                <PlatformAdmin
+                  platformSettings={this.props.platformSettings}
+                  privateSettings={this.props.privateSettings}
+                  dbMapping={this.props.dbMapping}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

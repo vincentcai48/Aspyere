@@ -277,7 +277,7 @@ header .header-s2 {
 
 .options-header {
   position: relative;
-  z-index: 100;
+  z-index: 15;
   height: 100%;
 }
 
@@ -1376,6 +1376,39 @@ section.lobbyPlatform-header {
 #lobbyPlatform-main {
   width: 95vw;
   margin: 0px auto 5vh auto;
+}
+
+.lobby-admin {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background-color: var(--sc);
+  border: 2px solid var(--sc);
+  border-radius: 5px;
+  color: white;
+  transition: all 0.2s;
+  padding: 10px 15px;
+  font-size: 18px;
+  font-weight: bolder;
+  box-shadow: 2px 2px 2px grey;
+  animation: lightflash 2s infinite;
+}
+
+@keyframes lightflash {
+  0% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.9;
+  }
+}
+
+.lobby-admin:hover {
+  color: var(--sc);
+  background-color: white;
 }
 
 #platform-info {

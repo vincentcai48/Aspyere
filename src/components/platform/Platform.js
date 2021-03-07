@@ -762,6 +762,7 @@ class Platform extends React.Component {
               privateSettings={this.state.privateSettings}
               publicJoin={this.state.platformSettings.publicJoin}
               platformSettings={this.state.platformSettings}
+              dbMapping={this.state.dbMapping}
             />
           </div>
         )}
