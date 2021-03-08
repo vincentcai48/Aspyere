@@ -396,7 +396,7 @@ exports.createGroup = functions.https.onCall(async (data, context) => {
     return false;
   }
 });
-//returns true if success, false if error.
+//returns the group Id if success, false if error.
 
 //data {platformId: , groupId: }
 exports.deleteGroup = functions.https.onCall(async (data, context) => {
@@ -450,7 +450,7 @@ async function createGroupInDB(platformId, groupSettings, userId) {
       .doc(newGroup.id)
       .set({ joinCode: randomCode });
     await joinGroupInDB(userId, platformId, newGroup.id, false);
-    return true;
+    return newGroup.id;
   } catch (e) {
     console.error(e);
     return false;

@@ -204,6 +204,7 @@ class LiveQuestions extends React.Component {
             this.state.eventId,
             this.state.groupId
           );
+          this.setState({ isSubmitLoading: false });
         }
       })
       .catch((e) => {

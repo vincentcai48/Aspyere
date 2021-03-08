@@ -22,6 +22,8 @@ import Contact from "./components/Contact.js";
 import Docs from "./components/docs/Docs.js";
 import PrivacyPolicy from "./components/legal/PrivacyPolicy.js";
 import Platform from "./components/platform/Platform.js";
+import Termsandconditions from "./components/legal/TermsAndConditions.js";
+import Disclaimers from "./components/legal/Disclaimers.js";
 
 class App extends React.Component {
   constructor() {
@@ -52,6 +54,8 @@ class App extends React.Component {
     };
   }
 
+  // NOTE: THE ONE TIME REFRESH IS IN THE AUTH.JS COMPONENT (because it fires on a login)
+
   componentDidMount() {
     this.setState({ isMobile: window.innerWidth > 576 ? false : true });
     pAuth.onAuthStateChanged((user) => {
@@ -61,8 +65,8 @@ class App extends React.Component {
           userId: user.uid,
           isLoadingSite: true,
         });
-        //get the user's current platform, auto set to that platform
         try {
+          //get their list of platforms
           pFirestore
             .collection("users")
             .doc(user.uid)
@@ -73,6 +77,8 @@ class App extends React.Component {
                   rootUserData: doc.data(),
                   isLoadingSite: false,
                 });
+
+                this.getUsersPlatforms(doc.data().allPlatforms);
               }
             });
         } catch (e) {
@@ -85,6 +91,7 @@ class App extends React.Component {
           displayName: null,
           userId: null,
           isLoadingSite: false,
+          redirect: null,
         });
       }
     });
@@ -136,12 +143,43 @@ class App extends React.Component {
     }
   };
 
+  //to display on the homepage
+  getTopPlatforms = async () => {
+    var platforms = await pFirestore
+      .collection("platforms")
+      .orderBy("views", "desc")
+      .limit(15)
+      .get();
+    var arr = [];
+    platforms.docs.forEach((d) => {
+      var withSameId = this.state.allPlatforms.filter((p) => p.id == d.id);
+      if (withSameId.length == 0) arr.push({ id: d.id, ...d.data() });
+    });
+    this.setState((p) => ({ allPlatforms: [...p.allPlatforms, ...arr] }));
+  };
+
+  //Get the document data of all the user's platforms
+  getUsersPlatforms = async (platformIds) => {
+    platformIds.forEach(async (pId) => {
+      var withSameId = this.state.allPlatforms.filter((p) => p.id == pId);
+      if (withSameId.length > 0) return;
+      else {
+        var newP = await pFirestore.collection("platforms").doc(pId).get();
+        this.state.setAllPlatforms([
+          ...this.state.allPlatforms,
+          { ...newP.data(), id: newP.id },
+        ]);
+      }
+    });
+  };
+
   render() {
     return (
       <PContext.Provider value={this.state}>
         <div className="App">
           <Router>
             <Header />
+            {/* {this.state.redirect && <Redirect to={this.state.redirect} />} */}
             <main id="main">
               {this.state.isLoadingSite ? (
                 <Loading isFullCenter={true} />
@@ -176,12 +214,31 @@ class App extends React.Component {
                       <Route path="/privacypolicy">
                         <PrivacyPolicy />
                       </Route>
+                      <Route path="/termsandconditions">
+                        <Termsandconditions />
+                      </Route>
+                      <Route path="/disclaimers">
+                        <Disclaimers />
+                      </Route>
+                      <Route path="/contact">
+                        <Contact />
+                      </Route>
                     </Switch>
                   ) : (
+                    //IMPORTANT: DON'T FORGET TO ADD LEGAL PAGES HERE
                     // If NOT logged in:
                     <Switch>
                       <Route path="/privacypolicy">
                         <PrivacyPolicy />
+                      </Route>
+                      <Route path="/termsandconditions">
+                        <Termsandconditions />
+                      </Route>
+                      <Route path="/disclaimers">
+                        <Disclaimers />
+                      </Route>
+                      <Route path="/contact">
+                        <Contact />
                       </Route>
                       <Route path="/*">
                         <Auth />

@@ -227,14 +227,7 @@ class EventsList extends React.Component {
             if (isOver && !this.state.isPast) return;
 
             return (
-              <li
-                key={e.id}
-                className={
-                  isCompleted && !this.state.isPast
-                    ? "single-event completed"
-                    : "single-event"
-                }
-              >
+              <li key={e.id} className="single-event">
                 {this.props.isAdmin && (
                   <button
                     className="sb edit-event-button"
@@ -297,7 +290,7 @@ class EventsList extends React.Component {
                       className="bb feedback-button"
                       onClick={() => {
                         this.setState({
-                          redirect: `questions?event=${e.id}&platform=${this.context.platform}`,
+                          redirect: `questions?event=${e.id}&platform=${this.props.platformId}&group=${this.props.groupId}`,
                         });
                       }}
                     >

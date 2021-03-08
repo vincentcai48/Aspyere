@@ -22,33 +22,7 @@ class Home extends React.Component {
     });
   }
 
-  getPlatforms = async () => {
-    this.setState({
-      prevIsShowPlatformPopup: this.context.isShowPlatformPopup,
-    });
-
-    if (this.context.rootUserData && this.context.rootUserData.allPlatforms) {
-      this.context.rootUserData.allPlatforms.forEach(async (pId) => {
-        var withSameId = this.context.allPlatforms.filter((p) => p.id == pId);
-        if (withSameId.length > 0) return;
-        else {
-          var newP = await pFirestore.collection("platforms").doc(pId).get();
-
-          this.context.setAllPlatforms([
-            ...this.context.allPlatforms,
-            { ...newP.data(), id: newP.id },
-          ]);
-        }
-      });
-    }
-  };
-
   render() {
-    if (
-      this.state.prevIsShowPlatformPopup != this.context.isShowPlatformPopup
-    ) {
-      this.getPlatforms();
-    }
     return (
       <div id="home-container">
         {this.context.userId ? (

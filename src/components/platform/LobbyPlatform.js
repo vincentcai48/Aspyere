@@ -152,14 +152,15 @@ class LobbyPlatform extends React.Component {
     var createGroup = pFunctions.httpsCallable("createGroup");
     var difficulty = this.state.inputDifficulty;
     if (this.props.groupOptionsOn && this.state.selectedGroupOption) {
-      difficulty = this.props.groupOptions
-        ? this.props.groupOptions.filter(
-            (e) => e.description == this.state.selectedGroupOption
-          )[0].difficulty
-        : this.state.inputDifficulty;
+      if (this.props.groupOption) {
+        var thisOption = this.props.groupOptions.filter(
+          (e) => e.description == this.state.selectedGroupOption
+        )[0];
+        if (thisOption.length > 0) difficulty = thisOption[0];
+      }
     }
     createGroup({
-      platformId: this.context.platform,
+      platformId: this.props.platformSettings.id,
       tryGroupCreateCode: this.state.tryGroupCreateCode,
       groupSettings: {
         name: this.state.inputName,
@@ -176,9 +177,13 @@ class LobbyPlatform extends React.Component {
           isCreateError: !res.data,
           showCreateGroupPopup: !res.data,
         });
-        this.props.checkJoinedStatus(this.props.requireGroup).then(() => {
-          this.props.setMenuOption(1);
-        });
+        if (res.data)
+          window.location = `/platform?id=${this.props.platformSettings.id}&group=${res.data}`;
+
+        // this.joinGroup();
+        // this.props.checkJoinedStatus(this.props.requireGroup).then(() => {
+        //   this.props.setMenuOption(1);
+        // });
       })
       .catch((e) => {
         this.setState({ isLoading: false, isCreateError: true });

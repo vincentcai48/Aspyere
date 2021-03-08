@@ -162,9 +162,8 @@ class Header extends React.Component {
                             <button
                               className="join-platform-button"
                               onClick={async () => {
-                                await this.context.joinPlatform(p);
+                                window.location = `/platform?id=${p}`;
                                 this.context.setIsShowPlatformPopup(false);
-                                window.location.reload();
                               }}
                             >
                               Join

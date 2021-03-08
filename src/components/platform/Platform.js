@@ -542,6 +542,7 @@ class Platform extends React.Component {
           groupData: {},
           isGroupNotExist: false,
         });
+        window.location = `platform?id=${this.state.platformId}`;
       })
       .catch((e) =>
         this.setState({ isUnjoinError: true, isUnjoinLoading: false })

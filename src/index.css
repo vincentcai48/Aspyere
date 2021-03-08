@@ -3617,7 +3617,27 @@ footer {
   padding: 15px;
 }
 
-#privacy-policy {
+footer #legal-links {
+  display: flex;
+  padding: 10px 20px;
+}
+
+#legal-links .legal-link {
+  font-size: 16px;
+  color: lightgrey;
+  text-decoration: none;
+  transition: all 0.2s;
+  padding: 0px 10px;
+}
+
+#legal-links .legal-link:hover {
+  color: white;
+}
+
+#privacy-policy,
+#terms-and-conditions,
+#disclaimers,
+#contact-info {
   width: 100%;
   box-sizing: border-box;
   padding: 5vh 5vw;

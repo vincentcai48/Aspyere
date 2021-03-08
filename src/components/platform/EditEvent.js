@@ -801,7 +801,8 @@ class EditEvent extends React.Component {
                             {q.qType === 1 && (
                               <div className="written-q-info">
                                 <h5>
-                                  {q.questionText || "Question Text Here"}
+                                  {<TextDisplay text={q.questionText} /> ||
+                                    "Question Text Here"}
                                 </h5>
                                 <ul className="answers">
                                   <li>Answers: </li>
