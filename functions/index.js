@@ -14,7 +14,6 @@ const PROJECT_NAME = `projects/${PROJECT_ID}`;
 
 const maxUsersMappingDocSize = 17000; //the most amount of usersMapping id-name pairs
 
-
 exports.getBillingInfo = functions.https.onRequest(async (req, res) => {
   setCredentialsForBilling();
   const billingInfo = await billing.getBillingInfo({ name: PROJECT_NAME });
@@ -91,38 +90,42 @@ exports.onNewUser = functions.auth.user().onCreate(async (user) => {
     });
   var allUMDocs = await db.collection("usersMapping").get();
   var isUMRecorded = false; //is recorded already in a usersMapping doc? (if not by the end of the loop, then create a new doc).
-  const username = user.displayName || user.email.split("@")[0]
-  allUMDocs.docs.forEach(doc=>{
+  const username = user.displayName || user.email.split("@")[0];
+  allUMDocs.docs.forEach(async (doc) => {
     //THIS IS THE MAX SIZE:
-    if(doc.data()["size"]<=maxUsersMappingDocSize){
-      await db.collection("usersMapping").doc(doc.id).update({ [user.uid]: username, size: admin.firestore.FieldValue.increment() });
+    if (doc.data()["size"] <= maxUsersMappingDocSize) {
+      await db
+        .collection("usersMapping")
+        .doc(doc.id)
+        .update({
+          [user.uid]: username,
+          size: admin.firestore.FieldValue.increment(),
+        });
       isUMRecorded = true;
-    } 
-  })
-  if(!isUMRecorded) {
-    await db.collection("usersMapping").add({[user.uid]: username, size:1})
+    }
+  });
+  if (!isUMRecorded) {
+    await db.collection("usersMapping").add({ [user.uid]: username, size: 1 });
   }
 });
 
 //data: String[] of uids
 exports.getUsersMapping = functions.https.onCall(async (data, context) => {
-  try{
-  var allUsersMappingDocs = await db.collection("usersMapping").get();
-  var index = 0;
-  var res = [];
-  data.forEach(uid=>{
-    allUsersMappingDocs.docs.forEach(d=>{
-      if(!d.data()[uid]) continue;
-      else{
-        res[index] = d.data()[uid];
-      }
-    })
-    index++;
-  })
-  return res;
-  }
-  catch(e){
-    return {error: e};
+  try {
+    var allUsersMappingDocs = await db.collection("usersMapping").get();
+    var index = 0;
+    var res = [];
+    data.forEach((uid) => {
+      allUsersMappingDocs.docs.forEach((d) => {
+        if (d.data()[uid]) {
+          res[index] = d.data()[uid];
+        }
+      });
+      index++;
+    });
+    return res;
+  } catch (e) {
+    return { error: e };
   }
 });
 //returns an object with each uid in the string mapped to the displayname of the user

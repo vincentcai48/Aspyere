@@ -209,11 +209,11 @@ class App extends React.Component {
   getUsersMapping = async (arrUids) => {
     var arrCurrUsers = Object.keys(this.state.usersMapping);
     arrUids = arrUids.filter((u) => arrCurrUsers.includes(u));
-    var getUsersMapping = pFunctions.httpsCallable("getUsersMapping");
-    var res = await getUsersMapping(arrUids);
-    this.setState((p) => ({
-      usersMapping: { ...res.data, ...p.usersMapping },
-    }));
+    // var getUsersMapping = pFunctions.httpsCallable("getUsersMapping");
+    // var res = await getUsersMapping(arrUids);
+    // this.setState((p) => ({
+    //   usersMapping: { ...res.data, ...p.usersMapping },
+    // }));
   };
 
   //Get the document data of all the user's platforms
@@ -246,10 +246,10 @@ class App extends React.Component {
                   {this.state.userId ? (
                     <Switch>
                       {this.state.redirect &&
-                        this.state.countRedirect == 1 &&
+                        this.state.countRedirect === 1 &&
                         (() => {
                           this.setState({ countRedirect: 2 });
-                          console.timeLog(
+                          console.log(
                             this.state.countRedirect,
                             "REDIRECTING!!"
                           );
