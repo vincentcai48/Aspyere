@@ -759,7 +759,7 @@ async function userPlatformRecord(userId, platformId) {
       allPlatforms: admin.firestore.FieldValue.arrayUnion(platformId),
     });
   await db
-    .collection("platform")
+    .collection("platforms")
     .doc(platformId)
     .update({
       members: admin.firestore.FieldValue.arrayUnion(userId),

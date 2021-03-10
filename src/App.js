@@ -245,17 +245,15 @@ class App extends React.Component {
                 <div id="site-afterLoading">
                   {this.state.userId ? (
                     <Switch>
-                      {this.state.redirect &&
-                        this.state.countRedirect === 1 &&
-                        (() => {
-                          this.setState({ countRedirect: 2 });
-                          console.log(
-                            this.state.countRedirect,
-                            "REDIRECTING!!"
-                          );
-                          return <Redirect to={this.state.redirect} />;
-                        })()}
                       <Route path="/" exact>
+                        {this.state.redirect &&
+                          (() => {
+                            console.log(this.state.redirect);
+                            const thisRedirect = this.state.redirect;
+                            this.setState({ countRedirect: 2, redirect: null });
+                            console.log(thisRedirect, "REDIRECTING!!");
+                            return <Redirect to={thisRedirect} />;
+                          })()}
                         <Home></Home>
                       </Route>
                       <Route path="/platform">

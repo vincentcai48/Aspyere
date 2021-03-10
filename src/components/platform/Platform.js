@@ -57,12 +57,14 @@ class Platform extends React.Component {
       showOptions: false,
       platformId: "",
       groupId: null,
+      setRedirect: (r) => this.setState({ redirect: r }),
     };
   }
 
   async componentDidMount(isOverride, newPId, newGId) {
     //Step 1: get the url param id and set to a var in state.
     const queryString = window.location.search;
+    this.setState({ currentRoute: queryString });
     const urlParams = new URLSearchParams(queryString);
     //check if has a platform id
     var pId = "";
@@ -155,6 +157,19 @@ class Platform extends React.Component {
       }
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  componentDidUpdate() {
+    this.checkNewRoute();
+  }
+
+  checkNewRoute() {
+    console.log(this.state.currentRoute, window.location.search);
+    if (window.location.search !== this.state.currentRoute) {
+      console.log("Changed route to: " + window.location.search);
+      this.state.unsubscribe();
+      this.componentDidMount();
     }
   }
 
@@ -574,7 +589,9 @@ class Platform extends React.Component {
 
   render() {
     if (this.state.redirect) {
-      return <Redirect to={this.state.redirect} />;
+      const thisRedirect = this.state.redirect;
+      this.setState({ redirect: null });
+      return <Redirect to={thisRedirect} />;
     }
     if (this.state.isLoadingPlatform)
       return (
@@ -827,6 +844,7 @@ class Platform extends React.Component {
               redirectWithRefresh={this.redirectWithRefresh}
               platformId={this.state.platformId}
               groupId={this.state.groupId}
+              setRedirect={this.state.setRedirect}
             />
           </div>
         )}

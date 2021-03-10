@@ -23,7 +23,7 @@ Object() dbMapping, (just to pass into PlatformAdmin)
 function() redirectWithRefresh()
 String platformId
 String groupId
-
+Function() setRedirect
 
 */
 class LobbyPlatform extends React.Component {
@@ -83,7 +83,7 @@ class LobbyPlatform extends React.Component {
       this.props.userData.joinedGroups &&
       this.props.userData.joinedGroups.includes(groupId)
     ) {
-      return this.props.redirectWithRefresh(
+      return this.props.setRedirect(
         `/platform?id=${this.props.platformSettings.id}&group=${groupId}`
       );
     }
@@ -108,7 +108,8 @@ class LobbyPlatform extends React.Component {
       if (isValid) {
         await this.props.checkJoinedStatus(this.props.requireGroup);
         this.setState({ isLoading: false });
-        this.props.redirectWithRefresh(
+        console.log("JOINED IN CLOUD FUNCTION!");
+        this.props.setRedirect(
           `/platform?id=${this.props.platformSettings.id}&group=${groupId}`
         );
       }
@@ -130,7 +131,7 @@ class LobbyPlatform extends React.Component {
       } else {
         await this.props.checkJoinedStatus(this.props.requireGroup);
         this.state({ isLoading: false });
-        this.props.redirectWithRefresh(
+        this.props.setRedirect(
           `/platform?id=${this.props.platformSettings.id}&group=individual`
         );
       }
@@ -180,7 +181,9 @@ class LobbyPlatform extends React.Component {
           showCreateGroupPopup: !res.data,
         });
         if (res.data)
-          window.location = `/platform?id=${this.props.platformSettings.id}&group=${res.data}`;
+          this.setRedirect(
+            `/platform?id=${this.props.platformSettings.id}&group=${res.data}`
+          );
 
         // this.joinGroup();
         // this.props.checkJoinedStatus(this.props.requireGroup).then(() => {
