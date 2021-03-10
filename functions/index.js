@@ -12,6 +12,9 @@ const billing = google.cloudbilling("v1").projects;
 const PROJECT_ID = process.env.GCLOUD_PROJECT;
 const PROJECT_NAME = `projects/${PROJECT_ID}`;
 
+const maxUsersMappingDocSize = 17000; //the most amount of usersMapping id-name pairs
+
+
 exports.getBillingInfo = functions.https.onRequest(async (req, res) => {
   setCredentialsForBilling();
   const billingInfo = await billing.getBillingInfo({ name: PROJECT_NAME });
@@ -86,11 +89,43 @@ exports.onNewUser = functions.auth.user().onCreate(async (user) => {
       platform: defaultPlatform,
       allPlatforms: defaultPlatform ? [defaultPlatform] : [],
     });
-  await db
-    .collection("settings")
-    .doc("usersMapping")
-    .update({ [user.uid]: { displayName: user.displayName || user.email } });
+  var allUMDocs = await db.collection("usersMapping").get();
+  var isUMRecorded = false; //is recorded already in a usersMapping doc? (if not by the end of the loop, then create a new doc).
+  const username = user.displayName || user.email.split("@")[0]
+  allUMDocs.docs.forEach(doc=>{
+    //THIS IS THE MAX SIZE:
+    if(doc.data()["size"]<=maxUsersMappingDocSize){
+      await db.collection("usersMapping").doc(doc.id).update({ [user.uid]: username, size: admin.firestore.FieldValue.increment() });
+      isUMRecorded = true;
+    } 
+  })
+  if(!isUMRecorded) {
+    await db.collection("usersMapping").add({[user.uid]: username, size:1})
+  }
 });
+
+//data: String[] of uids
+exports.getUsersMapping = functions.https.onCall(async (data, context) => {
+  try{
+  var allUsersMappingDocs = await db.collection("usersMapping").get();
+  var index = 0;
+  var res = [];
+  data.forEach(uid=>{
+    allUsersMappingDocs.docs.forEach(d=>{
+      if(!d.data()[uid]) continue;
+      else{
+        res[index] = d.data()[uid];
+      }
+    })
+    index++;
+  })
+  return res;
+  }
+  catch(e){
+    return {error: e};
+  }
+});
+//returns an object with each uid in the string mapped to the displayname of the user
 
 //data: {name: , description: }
 exports.createPlatform = functions.https.onCall(async (data, context) => {
@@ -102,6 +137,7 @@ exports.createPlatform = functions.https.onCall(async (data, context) => {
       name: data.name,
       description: data.description,
       admins: [context.auth.uid],
+      members: [context.auth.uid],
       adminRequests: [],
       databases: [],
       groupName: "Group",
@@ -134,25 +170,25 @@ exports.createPlatform = functions.https.onCall(async (data, context) => {
 });
 //returns true if success, false if error
 
-//ONLY WHEN EXPLICITLY SWITCHING TO A PLATFORM, so therefore must check if it is already in the user's "allPlatforms" array. When you join a platform the first time (through joining a group or individually), it automatically sets the user records.
-//data: {platformId: } (that's it)
-exports.joinPlatform = functions.https.onCall(async (data, context) => {
-  try {
-    var rootUserData = await db.collection("users").doc(context.auth.uid).get();
-    if (
-      rootUserData.data().allPlatforms &&
-      rootUserData.data().allPlatforms.includes(data.platformId)
-    ) {
-      await userPlatformRecord(context.auth.uid, data.platformId);
-      return true;
-    } else {
-      return false;
-    }
-  } catch (e) {
-    return false;
-  }
-});
-//return true if success, false if error
+// //ONLY WHEN EXPLICITLY SWITCHING TO A PLATFORM, so therefore must check if it is already in the user's "allPlatforms" array. When you join a platform the first time (through joining a group or individually), it automatically sets the user records.
+// //data: {platformId: } (that's it)
+// exports.joinPlatform = functions.https.onCall(async (data, context) => {
+//   try {
+//     var rootUserData = await db.collection("users").doc(context.auth.uid).get();
+//     if (
+//       rootUserData.data().allPlatforms &&
+//       rootUserData.data().allPlatforms.includes(data.platformId)
+//     ) {
+//       await userPlatformRecord(context.auth.uid, data.platformId);
+//       return true;
+//     } else {
+//       return false;
+//     }
+//   } catch (e) {
+//     return false;
+//   }
+// });
+// //return true if success, false if error
 
 //data: {platformId: }
 exports.incrementPlatformViews = functions.https.onCall(
@@ -718,6 +754,12 @@ async function userPlatformRecord(userId, platformId) {
     .update({
       platform: platformId,
       allPlatforms: admin.firestore.FieldValue.arrayUnion(platformId),
+    });
+  await db
+    .collection("platform")
+    .doc(platformId)
+    .update({
+      members: admin.firestore.FieldValue.arrayUnion(userId),
     });
 }
 

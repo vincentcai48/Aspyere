@@ -109,7 +109,10 @@ class Platform extends React.Component {
           //Here we get the group and user data (if a group a joined). One-time get this data.
           //first time, get this data just once. Snapshot listener updates when platform settings change. You don't want to do all this everytime the platform admin settings update.
           if (isFirstTime) {
-            //Step 3: get user data:
+            //Step 3: get the necessary userMapping usernames
+            await this.context.getUsersMapping(doc.data().members);
+
+            //Step 4: get user data:
             var userData = await pFirestore
               .collection("platforms")
               .doc(pId)
@@ -570,7 +573,6 @@ class Platform extends React.Component {
   };
 
   render() {
-    console.log(this.state.groupId);
     if (this.state.redirect) {
       return <Redirect to={this.state.redirect} />;
     }
@@ -592,6 +594,8 @@ class Platform extends React.Component {
             platformSettings={this.state.platformSettings}
             privateSettings={this.state.privateSettings}
             dbMapping={this.state.dbMapping}
+            platformId={this.state.platformId}
+            groupId={this.state.groupId}
           />
         );
         break;
@@ -608,6 +612,8 @@ class Platform extends React.Component {
             groupName={this.state.platformSettings.groupName}
             limit={this.state.limit}
             getLastViewed={this.getLastViewed}
+            platformId={this.state.platformId}
+            groupId={this.state.groupId}
           />
         );
         break;
@@ -636,17 +642,21 @@ class Platform extends React.Component {
             completedEvents={this.state.completedEvents}
             getCompletedEvents={this.getCompletedEvents}
             refreshCompletedEvents={this.refreshCompletedEvents}
+            platformId={this.state.platformId}
+            groupId={this.state.groupId}
           />
         );
         break;
       default:
         mainComponent = (
           <MyStats
-            userData={this.state.userData}
+            myStats={this.state.myStats}
             groupName={this.state.platformSettings.groupName}
             completedEvents={this.state.completedEvents}
             getCompletedEvents={this.getCompletedEvents}
             refreshCompletedEvents={this.refreshCompletedEvents}
+            platformId={this.state.platformId}
+            groupId={this.state.groupId}
           />
         );
     }
@@ -815,6 +825,8 @@ class Platform extends React.Component {
               platformSettings={this.state.platformSettings}
               dbMapping={this.state.dbMapping}
               redirectWithRefresh={this.redirectWithRefresh}
+              platformId={this.state.platformId}
+              groupId={this.state.groupId}
             />
           </div>
         )}

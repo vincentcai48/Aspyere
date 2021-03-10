@@ -20,6 +20,8 @@ import MyStats from "./MyStats";
  String groupName, 
  Number limit, 
  Function() getLastViewed (only to get the initial last viewed from firestore. Only call it in componentDidMount())
+ String platformId
+String groupId
 */
 class GroupAdmin extends React.Component {
   constructor() {
@@ -70,7 +72,7 @@ class GroupAdmin extends React.Component {
 
     // var doc = await pFirestore
     //   .collection("platforms")
-    //   .doc(this.context.platform)
+    //   .doc(this.props.platformId)
     //   .collection("users")
     //   .doc(pAuth.currentUser.uid)
     //   .get();
@@ -85,7 +87,7 @@ class GroupAdmin extends React.Component {
     //   await this.props.getGroupAdminData(lastViewed, new Date());
     //   var updateUserViewTime = pFunctions.httpsCallable("updateUserViewTime");
     //   updateUserViewTime({
-    //     platformId: this.context.platform,
+    //     platformId: this.props.platformId,
     //     fieldName: fieldName,
     //   })
     //     .then(() => {})
@@ -198,7 +200,7 @@ class GroupAdmin extends React.Component {
     this.setState({ isLoading: true });
     var updateGroupSettings = pFunctions.httpsCallable("updateGroupSettings");
     updateGroupSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
       updates: {
         name: this.state.inputName,
@@ -225,7 +227,7 @@ class GroupAdmin extends React.Component {
       "updatePrivateGroupSettings"
     );
     updatePrivateGroupSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
       privateSettings: {
         joinCode: this.state.inputJoinCode,
@@ -248,7 +250,7 @@ class GroupAdmin extends React.Component {
     this.setState({ userToPromote: null, isLoading: true });
     var promoteGroupUser = pFunctions.httpsCallable("promoteGroupUser");
     promoteGroupUser({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
       userToPromote: userToPromote,
     })
@@ -278,7 +280,7 @@ class GroupAdmin extends React.Component {
     else {
       var userDataDoc = await pFirestore
         .collection("platforms")
-        .doc(this.context.platform)
+        .doc(this.props.platformId)
         .collection("users")
         .doc(userId)
         .collection(this.props.groupData.id)
@@ -304,7 +306,7 @@ class GroupAdmin extends React.Component {
     this.setState({ isLoading: true });
     var deleteGroup = pFunctions.httpsCallable("deleteGroup");
     deleteGroup({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
     })
       .then((res) => {
@@ -325,7 +327,7 @@ class GroupAdmin extends React.Component {
     var groupId = this.props.groupData.id || "individual";
     var query = pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.props.platformId)
       .collection("users")
       .doc(userId)
       .collection(groupId)

@@ -51,19 +51,19 @@ class DBDashboard extends React.Component {
 
   componentDidMount() {
     this.setDBandUserData();
-    pFirestore
-      .collection("settings")
-      .doc("usersMapping")
-      .get()
-      .then((doc) => {
-        var usersMap = {};
-        var dataObj = { ...doc.data() };
-        var keys = Object.keys(dataObj);
-        keys.forEach((userId) => {
-          usersMap[userId] = dataObj[userId]["displayName"];
-        });
-        this.setState({ usersMap: usersMap });
-      });
+    // pFirestore
+    //   .collection("settings")
+    //   .doc("usersMapping")
+    //   .get()
+    //   .then((doc) => {
+    //     var usersMap = {};
+    //     var dataObj = { ...doc.data() };
+    //     var keys = Object.keys(dataObj);
+    //     keys.forEach((userId) => {
+    //       usersMap[userId] = dataObj[userId]["displayName"];
+    //     });
+    //     this.setState({ usersMap: usersMap });
+    //   });
     pAuth.onAuthStateChanged((user) => {
       if (user) {
         this.setDBandUserData();

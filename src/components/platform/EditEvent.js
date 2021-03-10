@@ -5,7 +5,14 @@ import { uuidv4 } from "uuidv4";
 import { fbTimestamp, pFunctions } from "../../services/config";
 import TextDisplay from "../TextDisplay";
 
-//PROPS: String eventId (null if adding event, id of event if editing it), Object eventData (the data of the event, null if adding object), Function closeFunction (to x-out of the popup), Function() setIsNeedRefresh (to show the refresh popup)
+/*PROPS: 
+String eventId (null if adding event, id of event if editing it), 
+Object eventData (the data of the event, null if adding object), 
+Function closeFunction (to x-out of the popup), 
+Function() setIsNeedRefresh (to show the refresh popup)
+String platformId
+*/
+
 class EditEvent extends React.Component {
   constructor() {
     super();
@@ -93,7 +100,7 @@ class EditEvent extends React.Component {
     var endTime = new Date(Number(this.state.startTime.getTime() + duration)); //calculate endTime from duration.
     //The Dates (IN MILLISECONDS) are converted to timestamps on the backend.
     updateEvent({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       eventId: this.props.eventId,
       updates: {
         name: this.state.name,
@@ -269,7 +276,7 @@ class EditEvent extends React.Component {
     this.setState({ isLoading: true, isError: false });
     var deleteEvent = pFunctions.httpsCallable("deleteEvent");
     deleteEvent({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       eventId: this.props.eventId,
     })
       .then(() => {

@@ -22,49 +22,6 @@ class Auth extends React.Component {
     };
   }
 
-  componentDidMount() {
-    pAuth.onAuthStateChanged((user) => {
-      if (user) {
-        this.oneTimeRedirect(user.uid);
-      }
-    });
-  }
-
-  //on login only, default to the first platform at index 0
-  oneTimeRedirect = (userId) => {
-    pFirestore
-      .collection("users")
-      .doc(pAuth.currentUser.uid)
-      .get()
-      .then((userDoc) => {
-        if (
-          !userDoc.data().allPlatforms ||
-          userDoc.data().allPlatforms.length == 0
-        )
-          return;
-        var pId = userDoc.data().allPlatforms[0];
-        pFirestore
-          .collection("platforms")
-          .doc(pId)
-          .collection("users")
-          .doc(userId)
-          .get()
-          .then((platformUserDoc) => {
-            if (!platformUserDoc.exists) {
-              window.location = `/platform?id=${pId}`;
-            } else {
-              var gId =
-                !platformUserDoc.data().joinedGroups ||
-                platformUserDoc.data().joinedGroups.length === 0
-                  ? null
-                  : platformUserDoc.data().joinedGroups[0];
-
-              window.location = `/platform?id=${pId}&group=${gId || ""}`;
-            }
-          });
-      });
-  };
-
   login = () => {
     pAuth.signInWithPopup(googleAuthProvider).then((result) => {
       const user = result.user;

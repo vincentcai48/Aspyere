@@ -75,7 +75,7 @@ class EventsList extends React.Component {
     var asDs = isPast ? "desc" : "asc";
     pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.props.platformId)
       .collection("events")
       .where("endTime", comparison, nowTime)
       .orderBy("endTime", asDs)
@@ -316,6 +316,7 @@ class EventsList extends React.Component {
               eventId={this.state.eventToEdit}
               eventData={this.state.editEventData}
               dbMapping={this.props.dbMapping}
+              platformId={this.props.platformId}
               closeFunction={() =>
                 this.setState({
                   showAdd: false,

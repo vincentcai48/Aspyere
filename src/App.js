@@ -37,7 +37,7 @@ class App extends React.Component {
       rootUserData: {},
       currentDB: null,
       setCurrentDB: (db) => this.setState({ currentDB: db }),
-      platform: null, //current Platform
+      //platform: null, //current Platform
       setPlatform: (p) =>
         this.setState({ platform: p, redirect: `/platform?id=${p}` }),
       platformName: null,
@@ -51,6 +51,8 @@ class App extends React.Component {
       isMobile: false,
       appSettings: {},
       redirect: null,
+      countRedirect: 0,
+      getUsersMapping: this.getUsersMapping,
     };
   }
 
@@ -58,13 +60,16 @@ class App extends React.Component {
 
   componentDidMount() {
     this.setState({ isMobile: window.innerWidth > 576 ? false : true });
-    pAuth.onAuthStateChanged((user) => {
+    pAuth.onAuthStateChanged(async (user) => {
       if (user) {
         this.setState({
           displayName: user.displayName,
           userId: user.uid,
           isLoadingSite: true,
         });
+        // if (window.location.pathname === "/" || window.location.pathname === "")
+        await this.oneTimeRedirect(user.uid);
+
         try {
           //get their list of platforms
           pFirestore
@@ -72,7 +77,7 @@ class App extends React.Component {
             .doc(user.uid)
             .onSnapshot((doc) => {
               if (doc.exists && doc.data()) {
-                this.state.setPlatform(doc.data().platform);
+                //this.state.setPlatform(doc.data().platform);
                 this.setState({
                   rootUserData: doc.data(),
                   isLoadingSite: false,
@@ -122,26 +127,69 @@ class App extends React.Component {
       });
   }
 
-  joinPlatform = async (platformId) => {
-    this.setState({ isLoading: true });
-    var joinPlatformFirebase = pFunctions.httpsCallable("joinPlatform");
-    try {
-      var res = await joinPlatformFirebase({ platformId: platformId });
+  //on login only, default to the first platform at index 0
+  oneTimeRedirect = async (userId) => {
+    await pFirestore
+      .collection("users")
+      .doc(pAuth.currentUser.uid)
+      .get()
+      .then((userDoc) => {
+        if (
+          !userDoc.data().allPlatforms ||
+          userDoc.data().allPlatforms.length == 0
+        )
+          return;
+        var pId = userDoc.data().allPlatforms[0];
+        console.log(pId);
+        console.log(userId);
+        pFirestore
+          .collection("platforms")
+          .doc(pId)
+          .collection("users")
+          .doc(userId)
+          .get()
+          .then((platformUserDoc) => {
+            if (!platformUserDoc.exists) {
+              this.setState({
+                redirect: `/platform?id=${pId}`,
+                countRedirect: 1,
+              });
+            } else {
+              var gId =
+                !platformUserDoc.data().joinedGroups ||
+                platformUserDoc.data().joinedGroups.length === 0
+                  ? null
+                  : platformUserDoc.data().joinedGroups[0];
 
-      this.setState({ isLoading: false });
-      if (res.data) {
-        if (this.state.platform != platformId)
-          this.setState({
-            platform: platformId,
+              this.setState({
+                redirect: `/platform?id=${pId}&group=${gId || ""}`,
+                countRedirect: 1,
+              });
+            }
           });
-      } else {
-        console.log("error");
-      }
-    } catch (e) {
-      this.setState({ isLoading: false });
-      console.error(e);
-    }
+      });
   };
+
+  // joinPlatform = async (platformId) => {
+  //   this.setState({ isLoading: true });
+  //   var joinPlatformFirebase = pFunctions.httpsCallable("joinPlatform");
+  //   try {
+  //     var res = await joinPlatformFirebase({ platformId: platformId });
+
+  //     this.setState({ isLoading: false });
+  //     if (res.data) {
+  //       if (this.state.platform != platformId)
+  //         this.setState({
+  //           platform: platformId,
+  //         });
+  //     } else {
+  //       console.log("error");
+  //     }
+  //   } catch (e) {
+  //     this.setState({ isLoading: false });
+  //     console.error(e);
+  //   }
+  // };
 
   //to display on the homepage
   getTopPlatforms = async () => {
@@ -156,6 +204,16 @@ class App extends React.Component {
       if (withSameId.length == 0) arr.push({ id: d.id, ...d.data() });
     });
     this.setState((p) => ({ allPlatforms: [...p.allPlatforms, ...arr] }));
+  };
+
+  getUsersMapping = async (arrUids) => {
+    var arrCurrUsers = Object.keys(this.state.usersMapping);
+    arrUids = arrUids.filter((u) => arrCurrUsers.includes(u));
+    var getUsersMapping = pFunctions.httpsCallable("getUsersMapping");
+    var res = await getUsersMapping(arrUids);
+    this.setState((p) => ({
+      usersMapping: { ...res.data, ...p.usersMapping },
+    }));
   };
 
   //Get the document data of all the user's platforms
@@ -187,6 +245,16 @@ class App extends React.Component {
                 <div id="site-afterLoading">
                   {this.state.userId ? (
                     <Switch>
+                      {this.state.redirect &&
+                        this.state.countRedirect == 1 &&
+                        (() => {
+                          this.setState({ countRedirect: 2 });
+                          console.timeLog(
+                            this.state.countRedirect,
+                            "REDIRECTING!!"
+                          );
+                          return <Redirect to={this.state.redirect} />;
+                        })()}
                       <Route path="/" exact>
                         <Home></Home>
                       </Route>

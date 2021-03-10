@@ -21,6 +21,8 @@ Boolean publicJoin,
 Object() platformSettings.
 Object() dbMapping, (just to pass into PlatformAdmin)
 function() redirectWithRefresh()
+String platformId
+String groupId
 
 
 */
@@ -51,7 +53,7 @@ class LobbyPlatform extends React.Component {
   componentDidMount() {
     pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.props.platformId)
       .collection("groups")
       .onSnapshot((snap) => {
         var arr = [];
@@ -98,7 +100,7 @@ class LobbyPlatform extends React.Component {
       var isValid = await cloudJoinGroup({
         groupId: groupId,
         accessCodeTry: this.state.accessCodeTry,
-        platformId: this.context.platform,
+        platformId: this.props.platformId,
       });
       isValid = isValid.data;
       //continue loading if valid, because still need to await checkJoinedStatus()
@@ -120,7 +122,7 @@ class LobbyPlatform extends React.Component {
       this.setState({ isLoading: true, showAccessError: false });
       var joinIndividually = pFunctions.httpsCallable("joinIndividually");
       var res = await joinIndividually({
-        platformId: this.context.platform,
+        platformId: this.props.platformId,
         tryJoinCode: this.state.accessCodeTry,
       });
       if (res.data.isError) {
