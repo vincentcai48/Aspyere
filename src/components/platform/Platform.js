@@ -165,9 +165,7 @@ class Platform extends React.Component {
   }
 
   checkNewRoute() {
-    console.log(this.state.currentRoute, window.location.search);
     if (window.location.search !== this.state.currentRoute) {
-      console.log("Changed route to: " + window.location.search);
       this.state.unsubscribe();
       this.componentDidMount();
     }
