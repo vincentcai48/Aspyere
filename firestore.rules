@@ -2,7 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{user} {
-      allow read, write;
+      allow read, write: if request.auth.uid == user;
+    }
+    
+    match /usersMapping/{usersMappingDoc}{
+    	allow read, write: if false;
     }
     
     //NOTE: don't get confused. Firestore at its root has "databases", but inside the Firestore database, there is a collection also called "databases", for Aspyere databases.
@@ -22,10 +26,15 @@ service cloud.firestore {
       request.resource.data.isViewable != null;
     }
     
+    match /dbPrivateSettings/{dbId} {
+    //only allow access to private settings if an admin
+    	allow read: if request.auth.uid in get(/databases/$(database)/documents/databases/$(dbId)).data.admins;
+    }
+    
     //rules for all nested questions in a database. NOTE the get() syntax, that is getting the data of the current database, the parent data.
     match /databases/{dbID}/questions/{question} {
     
-    	allow read, write: if
+    	allow read, write, delete: if
       request.auth.uid in get(/databases/$(database)/documents/databases/$(dbID)).data.members || 
       request.auth.uid in get(/databases/$(database)/documents/databases/$(dbID)).data.admins;
       
@@ -36,6 +45,41 @@ service cloud.firestore {
     
     //if request.resource.data.viewingCode == resource.data.viewingCode || 
       //request.resource.data.editingCode == resource.data.editingCode ||
+      
+    //CHANGE THIS
+    match /platforms/{platformId} {
+    	allow read;
+      
+      match /groups/{group} {
+      	allow read;
+      	allow create: if request.resource.data.admins != null;
+      }
+      
+      match /events/{event} {
+      	allow read;
+      }
+      
+      match /users/{user} {
+      	allow read;
+        
+        match /{groupId}/{eventId} {
+        	allow read;
+        }
+      }
+      
+      match /privateSettings/{privateSettingsDocId} {
+      	allow read, write: if request.auth.uid in get(/databases/$(database)/documents/platforms/$(platformId)).data.admins;
+        allow read,write: if request.auth.uid in get(/databases/$(database)/documents/platforms/$(platformId)/groups/$(privateSettingsDocId)).data.admins;
+      }
+    }
+    
+    match /settings/usersMapping{
+    	allow read, write: if false;
+    }
+    
+    match/settings/settings{
+    allow read;
+    }
     
   }
 }
