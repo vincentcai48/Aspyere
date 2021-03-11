@@ -761,9 +761,9 @@ class Platform extends React.Component {
                 <button
                   className="sb unjoin-button"
                   onClick={() =>
-                    this.redirectWithRefresh(
-                      `/platform?id=${this.state.platformId}`
-                    )
+                    this.setState({
+                      redirect: `/platform?id=${this.state.platformId}`,
+                    })
                   }
                 >
                   Switch{" "}

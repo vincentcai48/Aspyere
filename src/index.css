@@ -393,6 +393,10 @@ header .header-s2 {
   box-shadow: 3px 3px 5px black;
 }
 
+.ml-0{
+  margin-left: 0px;
+}
+
 /*stands for "no-scroll-popup"*/
 .nsp {
   overflow: hidden;

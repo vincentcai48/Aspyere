@@ -571,7 +571,7 @@ exports.joinIndividually = functions.https.onCall(async (data, context) => {
 //returns {isError: ,errorType: 1- joinCode is wrong, 2- platform doesn't exist 3- server error}
 
 //data: {platformId: , groupId: }
-//takes the user out of the group.
+//takes the user out of the group. (Not a "route away", but a FULL Deletion from this group)
 exports.unjoinGroup = functions.https.onCall(async (data, context) => {
   //Two steps: remove the user from the group doc, and delete the group records for the user docs
   try {

@@ -114,6 +114,7 @@ class LobbyPlatform extends React.Component {
         );
       }
     } catch (e) {
+      console.log("theres a function error");
       this.setState({ isLoading: false, showAccessError: true });
     }
   };
@@ -555,6 +556,21 @@ class LobbyPlatform extends React.Component {
             </div>
           )}
         </div>
+
+        {this.state.showAccessError && !this.state.groupToJoin && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <h3>Access Error</h3>
+              <button
+                className="cancel-button ml-0"
+                onClick={() => this.setState({ showAccessError: false })}
+              >
+                {" "}
+                Close{" "}
+              </button>
+            </div>
+          </div>
+        )}
 
         {this.state.showAdmin && (
           <div className="grayed-out-background">
