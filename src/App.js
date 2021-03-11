@@ -57,9 +57,9 @@ class App extends React.Component {
   }
 
   // NOTE: THE ONE TIME REFRESH IS IN THE AUTH.JS COMPONENT (because it fires on a login)
-
   componentDidMount() {
     this.setState({ isMobile: window.innerWidth > 576 ? false : true });
+
     pAuth.onAuthStateChanged(async (user) => {
       if (user) {
         this.setState({
@@ -102,20 +102,20 @@ class App extends React.Component {
     });
 
     //Get users mapping
-    pFirestore
-      .collection("settings")
-      .doc("usersMapping")
-      .get()
-      .then((doc) => {
-        var usersMap = {};
-        var dataObj = { ...doc.data() };
-        var keys = Object.keys(dataObj);
-        keys.forEach((userId) => {
-          usersMap[userId] = dataObj[userId]["displayName"];
-        });
+    // pFirestore
+    //   .collection("settings")
+    //   .doc("usersMapping")
+    //   .get()
+    //   .then((doc) => {
+    //     var usersMap = {};
+    //     var dataObj = { ...doc.data() };
+    //     var keys = Object.keys(dataObj);
+    //     keys.forEach((userId) => {
+    //       usersMap[userId] = dataObj[userId]["displayName"];
+    //     });
 
-        this.setState({ usersMapping: usersMap });
-      });
+    //     this.setState({ usersMapping: usersMap });
+    //   });
 
     //get settings, like the featured platforms:
     pFirestore
@@ -207,12 +207,18 @@ class App extends React.Component {
 
   getUsersMapping = async (arrUids) => {
     var arrCurrUsers = Object.keys(this.state.usersMapping);
-    arrUids = arrUids.filter((u) => arrCurrUsers.includes(u));
-    // var getUsersMapping = pFunctions.httpsCallable("getUsersMapping");
-    // var res = await getUsersMapping(arrUids);
-    // this.setState((p) => ({
-    //   usersMapping: { ...res.data, ...p.usersMapping },
-    // }));
+    console.log("ARR:" + arrUids);
+    arrUids = arrUids.filter((u) => !arrCurrUsers.includes(u));
+    console.log("ARR:" + arrUids);
+    var getUsersMapping = pFunctions.httpsCallable("getUsersMapping");
+    try {
+      var res = await getUsersMapping(arrUids);
+      this.setState((p) => ({
+        usersMapping: { ...res.data, ...p.usersMapping },
+      }));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   //Get the document data of all the user's platforms
@@ -222,15 +228,15 @@ class App extends React.Component {
       if (withSameId.length > 0) return;
       else {
         var newP = await pFirestore.collection("platforms").doc(pId).get();
-        this.state.setAllPlatforms([
-          ...this.state.allPlatforms,
-          { ...newP.data(), id: newP.id },
-        ]);
+        this.setState((p) => ({
+          allPlatforms: [...p.allPlatforms, { ...newP.data(), id: newP.id }],
+        }));
       }
     });
   };
 
   render() {
+    console.log(this.state.usersMapping);
     return (
       <PContext.Provider value={this.state}>
         <div className="App">

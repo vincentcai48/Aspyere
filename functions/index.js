@@ -114,11 +114,11 @@ exports.getUsersMapping = functions.https.onCall(async (data, context) => {
   try {
     var allUsersMappingDocs = await db.collection("usersMapping").get();
     var index = 0;
-    var res = [];
+    var res = {};
     data.forEach((uid) => {
       allUsersMappingDocs.docs.forEach((d) => {
         if (d.data()[uid]) {
-          res[index] = d.data()[uid];
+          res[uid] = d.data()[uid];
         }
       });
       index++;
