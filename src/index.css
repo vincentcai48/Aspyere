@@ -393,7 +393,7 @@ header .header-s2 {
   box-shadow: 3px 3px 5px black;
 }
 
-.ml-0{
+.ml-0 {
   margin-left: 0px;
 }
 
@@ -3043,8 +3043,17 @@ input[name="topicInput"] {
 .single-myPlatform .joined-text {
   font-weight: bold;
   color: var(--sc);
-  margin: 0px 20px;
+  margin: 10px 20px;
   text-shadow: 1px 1px 2px var(--sc);
+  border: none;
+  background-color: transparent;
+  opacity: 1;
+  transition: all 0.2s;
+  padding: 0px;
+}
+
+.joined-text:hover {
+  opacity: 0.8;
 }
 
 .create-platform.popup h4 {

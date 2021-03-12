@@ -156,19 +156,21 @@ class Header extends React.Component {
                     return (
                       <li className="single-myPlatform" key={pData.id}>
                         <div>
-                          {this.context.rootUserData.platform == p ? (
-                            <div className="joined-text">Joined</div>
-                          ) : (
-                            <button
-                              className="join-platform-button"
-                              onClick={async () => {
-                                window.location = `/platform?id=${p}`;
-                                this.context.setIsShowPlatformPopup(false);
-                              }}
-                            >
-                              Join
-                            </button>
-                          )}
+                          <button
+                            className={
+                              this.context.rootUserData.platform == p
+                                ? "joined-text"
+                                : "join-platform-button "
+                            }
+                            onClick={async () => {
+                              window.location = `/platform?id=${p}`;
+                              this.context.setIsShowPlatformPopup(false);
+                            }}
+                          >
+                            {this.context.rootUserData.platform == p
+                              ? "Joined"
+                              : "Join"}
+                          </button>
                         </div>
                         <div className="platform-nd">
                           <h5>{pData.name}</h5>
