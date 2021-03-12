@@ -365,7 +365,7 @@ class Platform extends React.Component {
         list.docs.forEach((e) => {
           var newE = { ...e.data() };
           newE.time = newE.timeSubmitted.toDate();
-          newE.userId = users[index]["id"];
+          newE.userId = users[index];
           delete newE.timeSubmitted;
           recentActivity.push(newE);
         });

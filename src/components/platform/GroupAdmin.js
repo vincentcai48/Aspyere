@@ -376,6 +376,7 @@ class GroupAdmin extends React.Component {
           <ul>
             {[...this.props.recentActivity].map((a) => {
               var score = this.getScore(a.questions);
+              console.log(a);
               return (
                 <li className="single-activity" key={a.eventName}>
                   <div className="activity-time">

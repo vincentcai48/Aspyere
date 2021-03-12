@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 function Footer() {
   return (
     <footer>
-      <div>&copy; Copyright Asypere 2020. All Rights Reserved</div>
+      <div>&copy; Copyright Asypere 2021. All Rights Reserved</div>
       <ul id="legal-links">
         <li>
           <Link className="legal-link" to="/privacypolicy">
