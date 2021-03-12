@@ -59,6 +59,7 @@ class App extends React.Component {
   // NOTE: THE ONE TIME REFRESH IS IN THE AUTH.JS COMPONENT (because it fires on a login)
   componentDidMount() {
     this.setState({ isMobile: window.innerWidth > 576 ? false : true });
+    this.getTopPlatforms();
 
     pAuth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -195,12 +196,18 @@ class App extends React.Component {
     var platforms = await pFirestore
       .collection("platforms")
       .orderBy("views", "desc")
-      .limit(15)
+      .limit(10)
       .get();
     var arr = [];
     platforms.docs.forEach((d) => {
-      var withSameId = this.state.allPlatforms.filter((p) => p.id == d.id);
-      if (withSameId.length == 0) arr.push({ id: d.id, ...d.data() });
+      var withSameId = [...this.state.allPlatforms];
+      withSameId = withSameId.filter((p) => p.id == d.id);
+      if (withSameId.length < 1) {
+        console.log("Platform id:" + d.id);
+        arr.push({ id: d.id, ...d.data() });
+      } else {
+        console.log("Already in Platform id:" + d.id);
+      }
     });
     this.setState((p) => ({ allPlatforms: [...p.allPlatforms, ...arr] }));
   };
@@ -223,15 +230,18 @@ class App extends React.Component {
 
   //Get the document data of all the user's platforms
   getUsersPlatforms = async (platformIds) => {
+    var arrNewPlatforms = []; //platforms not already in the list.
     platformIds.forEach(async (pId) => {
-      var withSameId = this.state.allPlatforms.filter((p) => p.id == pId);
+      var withSameId = [...this.state.allPlatforms].filter((p) => p.id == pId);
       if (withSameId.length > 0) return;
-      else {
-        var newP = await pFirestore.collection("platforms").doc(pId).get();
-        this.setState((p) => ({
-          allPlatforms: [...p.allPlatforms, { ...newP.data(), id: newP.id }],
-        }));
-      }
+      arrNewPlatforms.push(pFirestore.collection("platforms").doc(pId).get());
+    });
+    console.log(platformIds, arrNewPlatforms);
+    Promise.all(arrNewPlatforms).then((ress) => {
+      var arr = ress.map((res) => ({ ...res.data(), id: res.id }));
+      this.setState((p) => ({
+        allPlatforms: [...p.allPlatforms, ...arr],
+      }));
     });
   };
 
