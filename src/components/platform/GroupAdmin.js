@@ -314,7 +314,7 @@ class GroupAdmin extends React.Component {
           this.setState({ isLoading: false, isError: true });
         } else {
           this.setState({ isLoading: false });
-          window.location.reload();
+          this.props.setRedirect(`/platform?id=${this.props.platformId}`);
         }
       })
       .catch((e) => {

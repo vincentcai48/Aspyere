@@ -630,6 +630,7 @@ class Platform extends React.Component {
             getLastViewed={this.getLastViewed}
             platformId={this.state.platformId}
             groupId={this.state.groupId}
+            setRedirect={this.state.setRedirect}
           />
         );
         break;
