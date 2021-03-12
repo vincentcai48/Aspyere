@@ -3,7 +3,7 @@ import { PContext } from "../../services/context";
 import { displayTime } from "../../services/globalFunctions";
 import TextDisplay from "../TextDisplay";
 
-//PROPS: Object() userData (this includes the ID), String groupName, Array[] completedEvents, Function() getCompletedEvents(), Function() refreshCompletedEvents()
+//PROPS: Object() myStats (this includes the ID), String groupName, Array[] completedEvents, Function() getCompletedEvents(), Function() refreshCompletedEvents()
 class MyStats extends React.Component {
   constructor(props) {
     super();

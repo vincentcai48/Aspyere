@@ -203,10 +203,7 @@ class App extends React.Component {
       var withSameId = [...this.state.allPlatforms];
       withSameId = withSameId.filter((p) => p.id == d.id);
       if (withSameId.length < 1) {
-        console.log("Platform id:" + d.id);
         arr.push({ id: d.id, ...d.data() });
-      } else {
-        console.log("Already in Platform id:" + d.id);
       }
     });
     this.setState((p) => ({ allPlatforms: [...p.allPlatforms, ...arr] }));
@@ -214,9 +211,9 @@ class App extends React.Component {
 
   getUsersMapping = async (arrUids) => {
     var arrCurrUsers = Object.keys(this.state.usersMapping);
-    console.log("ARR:" + arrUids);
+
     arrUids = arrUids.filter((u) => !arrCurrUsers.includes(u));
-    console.log("ARR:" + arrUids);
+
     var getUsersMapping = pFunctions.httpsCallable("getUsersMapping");
     try {
       var res = await getUsersMapping(arrUids);
@@ -236,7 +233,7 @@ class App extends React.Component {
       if (withSameId.length > 0) return;
       arrNewPlatforms.push(pFirestore.collection("platforms").doc(pId).get());
     });
-    console.log(platformIds, arrNewPlatforms);
+
     Promise.all(arrNewPlatforms).then((ress) => {
       var arr = ress.map((res) => ({ ...res.data(), id: res.id }));
       this.setState((p) => ({
@@ -246,7 +243,6 @@ class App extends React.Component {
   };
 
   render() {
-    console.log(this.state.usersMapping);
     return (
       <PContext.Provider value={this.state}>
         <div className="App">
