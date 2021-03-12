@@ -157,6 +157,7 @@ class PlatformAdmin extends React.Component {
     var updatePlatformSettings = pFunctions.httpsCallable(
       "updatePlatformSettings"
     );
+    console.log(this.props.platformId);
     updatePlatformSettings({
       platformId: this.props.platformId,
       updates: updates,

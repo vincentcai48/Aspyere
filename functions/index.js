@@ -565,7 +565,8 @@ exports.joinIndividually = functions.https.onCall(async (data, context) => {
       }
     }
   } catch (e) {
-    return { isError: true, errorType: 3 };
+    console.error(e);
+    return { isError: true, errorType: 3, error: e };
   }
 });
 //returns {isError: ,errorType: 1- joinCode is wrong, 2- platform doesn't exist 3- server error}
@@ -722,6 +723,8 @@ async function joinGroupInDB(
         joinedGroups: admin.firestore.FieldValue.arrayUnion(groupId),
       });
   }
+
+  if (groupId === "individual") return;
   //Every New group joined, do two things
   //1: Add the user to the group document
   await db

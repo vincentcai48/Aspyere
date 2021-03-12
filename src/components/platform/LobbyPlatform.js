@@ -127,6 +127,7 @@ class LobbyPlatform extends React.Component {
         platformId: this.props.platformId,
         tryJoinCode: this.state.accessCodeTry,
       });
+      console.log(res.data);
       if (res.data.isError) {
         this.setState({ showAccessError: true, isLoading: false }); //Note: this will just show it is an error, won't actually show what type of error.
       } else {
@@ -164,7 +165,7 @@ class LobbyPlatform extends React.Component {
       }
     }
     createGroup({
-      platformId: this.props.platformSettings.id,
+      platformId: this.props.platformId,
       tryGroupCreateCode: this.state.tryGroupCreateCode,
       groupSettings: {
         name: this.state.inputName,
@@ -181,10 +182,12 @@ class LobbyPlatform extends React.Component {
           isCreateError: !res.data,
           showCreateGroupPopup: !res.data,
         });
-        if (res.data)
+        if (res.data) {
+          console.log(res.data);
           this.setRedirect(
             `/platform?id=${this.props.platformSettings.id}&group=${res.data}`
           );
+        }
 
         // this.joinGroup();
         // this.props.checkJoinedStatus(this.props.requireGroup).then(() => {
@@ -591,6 +594,8 @@ class LobbyPlatform extends React.Component {
                   platformSettings={this.props.platformSettings}
                   privateSettings={this.props.privateSettings}
                   dbMapping={this.props.dbMapping}
+                  platformId={this.props.platformId}
+                  groupId={this.props.groupId}
                 />
               </div>
             </div>

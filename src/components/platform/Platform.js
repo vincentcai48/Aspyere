@@ -173,6 +173,7 @@ class Platform extends React.Component {
 
   //Just gets the group data (and privateData if an admin)
   getGroupData = async (groupId) => {
+    if (this.state.groupId == "individual") return;
     await pFirestore
       .collection("platforms")
       .doc(this.state.platformId)
