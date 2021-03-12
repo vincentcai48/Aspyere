@@ -135,6 +135,7 @@ class App extends React.Component {
       .doc(pAuth.currentUser.uid)
       .get()
       .then((userDoc) => {
+        if (!userDoc.exists) return;
         if (
           !userDoc.data().allPlatforms ||
           userDoc.data().allPlatforms.length == 0

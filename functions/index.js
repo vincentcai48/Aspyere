@@ -91,21 +91,25 @@ exports.onNewUser = functions.auth.user().onCreate(async (user) => {
   var allUMDocs = await db.collection("usersMapping").get();
   var isUMRecorded = false; //is recorded already in a usersMapping doc? (if not by the end of the loop, then create a new doc).
   const username = user.displayName || user.email.split("@")[0];
-  allUMDocs.docs.forEach(async (doc) => {
+  var docIdToUpdate = ""; // the doc Id of the usersMapping collection to update.
+  allUMDocs.docs.forEach((doc) => {
     //THIS IS THE MAX SIZE:
     if (doc.data()["size"] <= maxUsersMappingDocSize) {
-      await db
-        .collection("usersMapping")
-        .doc(doc.id)
-        .update({
-          [user.uid]: username,
-          size: admin.firestore.FieldValue.increment(),
-        });
+      docIdToUpdate = doc.id;
       isUMRecorded = true;
     }
   });
   if (!isUMRecorded) {
     await db.collection("usersMapping").add({ [user.uid]: username, size: 1 });
+    return;
+  } else {
+    await db
+      .collection("usersMapping")
+      .doc(docIdToUpdate)
+      .update({
+        [user.uid]: username,
+        size: admin.firestore.FieldValue.increment(1),
+      });
   }
 });
 
