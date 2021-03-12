@@ -184,7 +184,7 @@ class LobbyPlatform extends React.Component {
         });
         if (res.data) {
           console.log(res.data);
-          this.setRedirect(
+          this.props.setRedirect(
             `/platform?id=${this.props.platformSettings.id}&group=${res.data}`
           );
         }

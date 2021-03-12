@@ -32,15 +32,17 @@ class MyStats extends React.Component {
 
   render() {
     var d = this.props.myStats;
-    var isNoStats = false;
-    var weeks = d.startTime
-      ? Math.abs(
-          (d.startTime.toDate().getTime() - new Date().getTime()) /
-            (7 * 24 * 60 * 60 * 1000)
-        )
-      : 0.9;
     if (!d || (!d.totalPoints && !d.totalEvents && !d.totalPossiblePoints))
       isNoStats = true;
+    else {
+      var isNoStats = false;
+      var weeks = d.startTime
+        ? Math.abs(
+            (d.startTime.toDate().getTime() - new Date().getTime()) /
+              (7 * 24 * 60 * 60 * 1000)
+          )
+        : 0.9;
+    }
     return (
       <div id="user-stats-container">
         <section id="myStats">
