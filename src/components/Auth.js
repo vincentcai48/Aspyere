@@ -1,4 +1,5 @@
 import React from "react";
+import { Redirect } from "react-router";
 import gIcon from "../images/googleicon.png";
 import {
   fbFieldValue,
@@ -17,6 +18,7 @@ class Auth extends React.Component {
       loginEmail: "",
       loginPassword: "",
       errorMessage: null,
+      redirect: null,
     };
   }
 
@@ -24,21 +26,21 @@ class Auth extends React.Component {
     pAuth.signInWithPopup(googleAuthProvider).then((result) => {
       const user = result.user;
 
-      pFirestore
-        .collection("users")
-        .doc(user.uid)
-        .get()
-        .then((doc) => {
-          //Already in the onNewUser cloud function.
-          //   if (!doc.exists) {
-          //     pFirestore.collection("users").doc(user.uid).set({
-          //       displayName: user.displayName,
-          //       email: user.email,
-          //       dateCreated: fbFieldValue.serverTimestamp(),
-          //       imageURL: user.photoURL,
-          //     });
-          //   }
-        });
+      // pFirestore
+      //   .collection("users")
+      //   .doc(user.uid)
+      //   .get()
+      //   .then((doc) => {
+      //     //Already in the onNewUser cloud function.
+      //     //   if (!doc.exists) {
+      //     //     pFirestore.collection("users").doc(user.uid).set({
+      //     //       displayName: user.displayName,
+      //     //       email: user.email,
+      //     //       dateCreated: fbFieldValue.serverTimestamp(),
+      //     //       imageURL: user.photoURL,
+      //     //     });
+      //     //   }
+      //   });
     });
   };
 
@@ -70,6 +72,8 @@ class Auth extends React.Component {
   };
 
   render() {
+    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
+
     return (
       <div id="auth-container">
         <h2>Login</h2>

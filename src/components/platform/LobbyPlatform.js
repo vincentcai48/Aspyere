@@ -3,8 +3,29 @@ import { pAuth, pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
 import Loading from "../Loading";
 import personIcon from "../../images/person-icon.png";
+import { Redirect } from "react-router";
+import PlatformAdmin from "./PlatformAdmin";
 
-//PROPS: Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), String groupName (what to call a "group". Eg: a "class"), Boolean requireGroup, Boolean publicCreateGroup, Boolean groupOptionsOn, Array[] groupOptions, Function() checkJoinedStatus (to use when you join), Function() setMenuOption, Object() privateSettings, Boolean publicJoin, Object() platformSettings.
+/*
+PROPS: 
+Object() userData (the data from the user doc in the platform. Contains the "joinedGroups" Array), 
+String groupName (what to call a "group". Eg: a "class"), 
+Boolean requireGroup, 
+Boolean publicCreateGroup, 
+Boolean groupOptionsOn, 
+Array[] groupOptions, 
+Function() checkJoinedStatus (to use when you join), 
+Function() setMenuOption, 
+Object() privateSettings, 
+Boolean publicJoin, 
+Object() platformSettings.
+Object() dbMapping, (just to pass into PlatformAdmin)
+function() redirectWithRefresh()
+String platformId
+String groupId
+Function() setRedirect
+
+*/
 class LobbyPlatform extends React.Component {
   constructor() {
     super();
@@ -24,6 +45,7 @@ class LobbyPlatform extends React.Component {
       inputIsPublic: false,
       inputJoinCode: "",
       showJoinedBefore: true,
+      showAdmin: false,
       //storedCreateGroupCode: null, //to use to store the code, after it has been checked
     };
   }
@@ -31,7 +53,7 @@ class LobbyPlatform extends React.Component {
   componentDidMount() {
     pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.props.platformId)
       .collection("groups")
       .onSnapshot((snap) => {
         var arr = [];
@@ -55,16 +77,30 @@ class LobbyPlatform extends React.Component {
   };
 
   joinGroup = async (groupId) => {
+    //Step 1: check if already joined the group, then just do a redirect. (even if it's individual)
+    if (
+      this.props.userData &&
+      this.props.userData.joinedGroups &&
+      this.props.userData.joinedGroups.includes(groupId)
+    ) {
+      return this.props.setRedirect(
+        `/platform?id=${this.props.platformSettings.id}&group=${groupId}`
+      );
+    }
+
+    //Step 2: check if individually joining, use the cloud function.
     if (groupId == "individual") {
       return this.joinIndividually();
     }
+
+    //Step 3: this means you're joined for the first time, and use the cloud function.
     this.setState({ isLoading: true, showAccessError: false });
     var cloudJoinGroup = pFunctions.httpsCallable("joinGroup");
     try {
       var isValid = await cloudJoinGroup({
         groupId: groupId,
         accessCodeTry: this.state.accessCodeTry,
-        platformId: this.context.platform,
+        platformId: this.props.platformId,
       });
       isValid = isValid.data;
       //continue loading if valid, because still need to await checkJoinedStatus()
@@ -72,8 +108,13 @@ class LobbyPlatform extends React.Component {
       if (isValid) {
         await this.props.checkJoinedStatus(this.props.requireGroup);
         this.setState({ isLoading: false });
+        console.log("JOINED IN CLOUD FUNCTION!");
+        this.props.setRedirect(
+          `/platform?id=${this.props.platformSettings.id}&group=${groupId}`
+        );
       }
     } catch (e) {
+      console.log("theres a function error");
       this.setState({ isLoading: false, showAccessError: true });
     }
   };
@@ -83,14 +124,18 @@ class LobbyPlatform extends React.Component {
       this.setState({ isLoading: true, showAccessError: false });
       var joinIndividually = pFunctions.httpsCallable("joinIndividually");
       var res = await joinIndividually({
-        platformId: this.context.platform,
+        platformId: this.props.platformId,
         tryJoinCode: this.state.accessCodeTry,
       });
+      console.log(res.data);
       if (res.data.isError) {
         this.setState({ showAccessError: true, isLoading: false }); //Note: this will just show it is an error, won't actually show what type of error.
       } else {
         await this.props.checkJoinedStatus(this.props.requireGroup);
         this.state({ isLoading: false });
+        this.props.setRedirect(
+          `/platform?id=${this.props.platformSettings.id}&group=individual`
+        );
       }
     } catch (e) {
       this.setState({ showAccessError: true, isLoading: false });
@@ -112,14 +157,15 @@ class LobbyPlatform extends React.Component {
     var createGroup = pFunctions.httpsCallable("createGroup");
     var difficulty = this.state.inputDifficulty;
     if (this.props.groupOptionsOn && this.state.selectedGroupOption) {
-      difficulty = this.props.groupOptions
-        ? this.props.groupOptions.filter(
-            (e) => e.description == this.state.selectedGroupOption
-          )[0].difficulty
-        : this.state.inputDifficulty;
+      if (this.props.groupOption) {
+        var thisOption = this.props.groupOptions.filter(
+          (e) => e.description == this.state.selectedGroupOption
+        )[0];
+        if (thisOption.length > 0) difficulty = thisOption[0];
+      }
     }
     createGroup({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       tryGroupCreateCode: this.state.tryGroupCreateCode,
       groupSettings: {
         name: this.state.inputName,
@@ -136,9 +182,17 @@ class LobbyPlatform extends React.Component {
           isCreateError: !res.data,
           showCreateGroupPopup: !res.data,
         });
-        this.props.checkJoinedStatus(this.props.requireGroup).then(() => {
-          this.props.setMenuOption(1);
-        });
+        if (res.data) {
+          console.log(res.data);
+          this.props.setRedirect(
+            `/platform?id=${this.props.platformSettings.id}&group=${res.data}`
+          );
+        }
+
+        // this.joinGroup();
+        // this.props.checkJoinedStatus(this.props.requireGroup).then(() => {
+        //   this.props.setMenuOption(1);
+        // });
       })
       .catch((e) => {
         this.setState({ isLoading: false, isCreateError: true });
@@ -146,6 +200,7 @@ class LobbyPlatform extends React.Component {
   };
 
   render() {
+    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
       <div>
         <section
@@ -156,13 +211,28 @@ class LobbyPlatform extends React.Component {
           }}
         >
           <span>
-            <button onClick={() => this.context.setPlatform(null)}>
+            <button
+              onClick={() => this.setState({ redirect: "/platformlist" })}
+            >
               All Platforms
             </button>
             <i className="fas fa-chevron-right"></i>
             <i className="fas fa-home"></i>Platform Homepage
           </span>
           <h2 id="lobbyHeader-name">{this.props.platformSettings.name}</h2>
+          {this.props.platformSettings.admins &&
+            this.props.platformSettings.admins.includes(
+              pAuth.currentUser.uid
+            ) && (
+              <button
+                className="lobby-admin"
+                onClick={() =>
+                  this.setState((p) => ({ showAdmin: !p.showAdmin }))
+                }
+              >
+                Admin Settings
+              </button>
+            )}
         </section>
         <div id="lobbyPlatform-main">
           <div id="platform-info">
@@ -194,7 +264,7 @@ class LobbyPlatform extends React.Component {
                       )) ||
                     this.props.publicJoin
                   ) {
-                    this.joinIndividually();
+                    this.joinGroup("individual");
                   } else {
                     this.setState({ groupToJoin: "individual" });
                   }
@@ -489,6 +559,48 @@ class LobbyPlatform extends React.Component {
             </div>
           )}
         </div>
+
+        {this.state.showAccessError && !this.state.groupToJoin && (
+          <div className="grayed-out-background">
+            <div className="popup nsp">
+              <h3>Access Error</h3>
+              <button
+                className="cancel-button ml-0"
+                onClick={() => this.setState({ showAccessError: false })}
+              >
+                {" "}
+                Close{" "}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {this.state.showAdmin && (
+          <div className="grayed-out-background">
+            <div className="fsp">
+              <div className="fsp-header">
+                <h2>Platform Admin</h2>
+                <div className="side-buttons">
+                  <button
+                    className="cancel-button"
+                    onClick={() => this.setState({ showAdmin: false })}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+              <div className="fsp-main">
+                <PlatformAdmin
+                  platformSettings={this.props.platformSettings}
+                  privateSettings={this.props.privateSettings}
+                  dbMapping={this.props.dbMapping}
+                  platformId={this.props.platformId}
+                  groupId={this.props.groupId}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

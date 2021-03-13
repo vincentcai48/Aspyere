@@ -12,6 +12,8 @@ const billing = google.cloudbilling("v1").projects;
 const PROJECT_ID = process.env.GCLOUD_PROJECT;
 const PROJECT_NAME = `projects/${PROJECT_ID}`;
 
+const maxUsersMappingDocSize = 17000; //the most amount of usersMapping id-name pairs
+
 exports.getBillingInfo = functions.https.onRequest(async (req, res) => {
   setCredentialsForBilling();
   const billingInfo = await billing.getBillingInfo({ name: PROJECT_NAME });
@@ -86,11 +88,51 @@ exports.onNewUser = functions.auth.user().onCreate(async (user) => {
       platform: defaultPlatform,
       allPlatforms: defaultPlatform ? [defaultPlatform] : [],
     });
-  await db
-    .collection("settings")
-    .doc("usersMapping")
-    .update({ [user.uid]: { displayName: user.displayName || user.email } });
+  var allUMDocs = await db.collection("usersMapping").get();
+  var isUMRecorded = false; //is recorded already in a usersMapping doc? (if not by the end of the loop, then create a new doc).
+  const username = user.displayName || user.email.split("@")[0];
+  var docIdToUpdate = ""; // the doc Id of the usersMapping collection to update.
+  allUMDocs.docs.forEach((doc) => {
+    //THIS IS THE MAX SIZE:
+    if (doc.data()["size"] <= maxUsersMappingDocSize) {
+      docIdToUpdate = doc.id;
+      isUMRecorded = true;
+    }
+  });
+  if (!isUMRecorded) {
+    await db.collection("usersMapping").add({ [user.uid]: username, size: 1 });
+    return;
+  } else {
+    await db
+      .collection("usersMapping")
+      .doc(docIdToUpdate)
+      .update({
+        [user.uid]: username,
+        size: admin.firestore.FieldValue.increment(1),
+      });
+  }
 });
+
+//data: String[] of uids
+exports.getUsersMapping = functions.https.onCall(async (data, context) => {
+  try {
+    var allUsersMappingDocs = await db.collection("usersMapping").get();
+    var index = 0;
+    var res = {};
+    data.forEach((uid) => {
+      allUsersMappingDocs.docs.forEach((d) => {
+        if (d.data()[uid]) {
+          res[uid] = d.data()[uid];
+        }
+      });
+      index++;
+    });
+    return res;
+  } catch (e) {
+    return { error: e };
+  }
+});
+//returns an object with each uid in the string mapped to the displayname of the user
 
 //data: {name: , description: }
 exports.createPlatform = functions.https.onCall(async (data, context) => {
@@ -102,6 +144,7 @@ exports.createPlatform = functions.https.onCall(async (data, context) => {
       name: data.name,
       description: data.description,
       admins: [context.auth.uid],
+      members: [context.auth.uid],
       adminRequests: [],
       databases: [],
       groupName: "Group",
@@ -134,25 +177,25 @@ exports.createPlatform = functions.https.onCall(async (data, context) => {
 });
 //returns true if success, false if error
 
-//ONLY WHEN EXPLICITLY SWITCHING TO A PLATFORM, so therefore must check if it is already in the user's "allPlatforms" array. When you join a platform the first time (through joining a group or individually), it automatically sets the user records.
-//data: {platformId: } (that's it)
-exports.joinPlatform = functions.https.onCall(async (data, context) => {
-  try {
-    var rootUserData = await db.collection("users").doc(context.auth.uid).get();
-    if (
-      rootUserData.data().allPlatforms &&
-      rootUserData.data().allPlatforms.includes(data.platformId)
-    ) {
-      await userPlatformRecord(context.auth.uid, data.platformId);
-      return true;
-    } else {
-      return false;
-    }
-  } catch (e) {
-    return false;
-  }
-});
-//return true if success, false if error
+// //ONLY WHEN EXPLICITLY SWITCHING TO A PLATFORM, so therefore must check if it is already in the user's "allPlatforms" array. When you join a platform the first time (through joining a group or individually), it automatically sets the user records.
+// //data: {platformId: } (that's it)
+// exports.joinPlatform = functions.https.onCall(async (data, context) => {
+//   try {
+//     var rootUserData = await db.collection("users").doc(context.auth.uid).get();
+//     if (
+//       rootUserData.data().allPlatforms &&
+//       rootUserData.data().allPlatforms.includes(data.platformId)
+//     ) {
+//       await userPlatformRecord(context.auth.uid, data.platformId);
+//       return true;
+//     } else {
+//       return false;
+//     }
+//   } catch (e) {
+//     return false;
+//   }
+// });
+// //return true if success, false if error
 
 //data: {platformId: }
 exports.incrementPlatformViews = functions.https.onCall(
@@ -396,7 +439,7 @@ exports.createGroup = functions.https.onCall(async (data, context) => {
     return false;
   }
 });
-//returns true if success, false if error.
+//returns the group Id if success, false if error.
 
 //data {platformId: , groupId: }
 exports.deleteGroup = functions.https.onCall(async (data, context) => {
@@ -450,7 +493,7 @@ async function createGroupInDB(platformId, groupSettings, userId) {
       .doc(newGroup.id)
       .set({ joinCode: randomCode });
     await joinGroupInDB(userId, platformId, newGroup.id, false);
-    return true;
+    return newGroup.id;
   } catch (e) {
     console.error(e);
     return false;
@@ -526,20 +569,42 @@ exports.joinIndividually = functions.https.onCall(async (data, context) => {
       }
     }
   } catch (e) {
-    return { isError: true, errorType: 3 };
+    console.error(e);
+    return { isError: true, errorType: 3, error: e };
   }
 });
 //returns {isError: ,errorType: 1- joinCode is wrong, 2- platform doesn't exist 3- server error}
 
-//data: {platformId: }
-//just sets the group to null
+//data: {platformId: , groupId: }
+//takes the user out of the group. (Not a "route away", but a FULL Deletion from this group)
 exports.unjoinGroup = functions.https.onCall(async (data, context) => {
-  await db
-    .collection("platforms")
-    .doc(data.platformId)
-    .collection("users")
-    .doc(context.auth.uid)
-    .update({ currentGroup: null });
+  //Two steps: remove the user from the group doc, and delete the group records for the user docs
+  try {
+    //Step 1: Remove as a member of this group (simply take the userid out of the array)
+    await db
+      .collection("platforms")
+      .doc(data.platformId)
+      .collection("groups")
+      .doc(data.groupId)
+      .update({
+        members: admin.firestore.FieldValue.arrayRemove(context.auth.uid),
+      });
+
+    //Step 2: Remove the group from joinedGroups, and remove the stats page
+    var userDoc = db
+      .collection("platforms")
+      .doc(data.platformId)
+      .collection("users")
+      .doc(context.auth.uid);
+
+    await userDoc.update({
+      joinedGroups: admin.firestore.FieldValue.arrayRemove(data.groupId),
+    });
+    await userDoc.collection(groupId).doc("userData").delete();
+    return true;
+  } catch (e) {
+    return false;
+  }
 });
 
 //data: Object {platformId: , groupId: , accessCodeTry}
@@ -623,8 +688,15 @@ async function joinGroupInDB(
       .collection("users")
       .doc(userId)
       .update({
-        currentGroup: groupId,
         joinedGroups: admin.firestore.FieldValue.arrayUnion(groupId),
+      });
+    await db
+      .collection("platforms")
+      .doc(platformId)
+      .collection("groups")
+      .doc(groupId)
+      .update({
+        members: admin.firestore.FieldValue.arrayUnion(userId),
       });
     return;
   }
@@ -642,7 +714,6 @@ async function joinGroupInDB(
       .collection("users")
       .doc(userId)
       .set({
-        currentGroup: groupId,
         completedEvents: [],
         joinedGroups: [groupId], //create this. These are the groups already joined at least once before
       });
@@ -653,11 +724,23 @@ async function joinGroupInDB(
       .collection("users")
       .doc(userId)
       .update({
-        currentGroup: groupId,
         joinedGroups: admin.firestore.FieldValue.arrayUnion(groupId),
       });
   }
-  //this should be for every new group joined.
+
+  if (groupId === "individual") return;
+  //Every New group joined, do two things
+  //1: Add the user to the group document
+  await db
+    .collection("platforms")
+    .doc(platformId)
+    .collection("groups")
+    .doc(groupId)
+    .update({
+      members: admin.firestore.FieldValue.arrayUnion(userId),
+    });
+
+  //2: Create a stats document for the user
   var userDataRecords = await doc.ref.collection(groupId).doc("userData").get();
   if (!userDataRecords.exists) {
     userDataRecords.ref.set(
@@ -681,6 +764,12 @@ async function userPlatformRecord(userId, platformId) {
     .update({
       platform: platformId,
       allPlatforms: admin.firestore.FieldValue.arrayUnion(platformId),
+    });
+  await db
+    .collection("platforms")
+    .doc(platformId)
+    .update({
+      members: admin.firestore.FieldValue.arrayUnion(userId),
     });
 }
 
@@ -937,7 +1026,7 @@ async function checkIfAdmin(platformId, userId) {
 }
 //returns a boolean
 
-//data: {platformId: , eventId: }
+//data: {platformId: , eventId:, groupId:  }
 exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
   //Step 1: first check if the user is logged in, and get the event doc (for name and description, also checking if platform and event ids are valid)
   if (!context.auth.uid) return { isError: true, errorType: 6 };
@@ -959,7 +1048,8 @@ exports.getLiveQuestions = functions.https.onCall(async (data, context) => {
   var userRecords = await getUserRecords(
     data.platformId,
     context.auth.uid,
-    data.eventId
+    data.eventId,
+    data.groupId
   );
   if (userRecords.isNotFound)
     return { isError: true, errorType: 5, userId: context.auth.uid };
@@ -1106,7 +1196,7 @@ An object with properties:
 
 //check to prevent double doing the rounds, and get the groupId
 //true: OK, is first time; false: already did this event;
-async function getUserRecords(platformId, userId, eventId) {
+async function getUserRecords(platformId, userId, eventId, groupId) {
   //first get the group id from the user doc.
   var userData = await db
     .collection("platforms")
@@ -1118,27 +1208,26 @@ async function getUserRecords(platformId, userId, eventId) {
 
   //then get the records, if any.
 
-  var currentGroup = userData.data().currentGroup;
-  if (!currentGroup) return { isNotFound: true };
+  if (!groupId) return { isNotFound: true };
   var records = await db
     .collection("platforms")
     .doc(platformId)
     .collection("users")
     .doc(userId)
-    .collection(currentGroup)
+    .collection(groupId)
     .doc(eventId)
     .get();
   if (!records.exists)
-    return { isNotFound: false, isFirstTime: true, groupId: currentGroup };
+    return { isNotFound: false, isFirstTime: true, groupId: groupId };
   return {
     isNotFound: false,
     isFirstTime: false,
-    groupId: currentGroup,
+    groupId: groupId,
     records: records.data(),
   };
 }
 //returns {isNotFound: , isFirstTime: , groupId: }
-//will return isNotFound as true if either there is no document for that user, OR if the currentGroup is null.
+//will return isNotFound as true if either there is no document for that user, OR if the groupId is null.
 
 async function generateQuestionFromDB(
   question,
@@ -1155,7 +1244,20 @@ async function generateQuestionFromDB(
   if (question.dbRandomize) dbId = await getRandomDB(platformId, userId);
   if (!dbId) return null; //Here, if it is STILL nonexistent after any db was selected, this means there is no dbs connected to the platform, and thus an error.
 
-  //Step 5.5: Only if there is a specific question ID, get the question and return. If the Question ID is nonexistent, fallback to generating random question.
+  //Step 5.1: Check if qType is 1. If it is 2 or does not exist, proceed. This is for WRITTEN QUESTIONS in the event
+  if (question.qType === 1) {
+    return {
+      qType: 1,
+      answers: question.answers,
+      text: question.questionText,
+      solution: question.solution,
+      imageURLs: question.imageURLs,
+      isError: false,
+      points: question.points,
+    };
+  }
+
+  //Step 5.2: Only if there is a specific question ID, get the question and return. If the Question ID is nonexistent, fallback to generating random question.
   if (!question.questionRandomize && question.questionId) {
     var qr = await db
       .collection("databases")
@@ -1373,8 +1475,8 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
           String(data.answers[index]).toLowerCase()
         ),
         points: Number(q.points),
-        dbId: q.dbId,
-        questionId: q.questionId,
+        dbId: q.dbId || null,
+        questionId: q.questionId || null,
         answer: String(data.answers[index]),
         acceptedAnswers: q.answers,
         text: q.text,
@@ -1392,7 +1494,7 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
     .collection("users")
     .doc(context.auth.uid)
     .get();
-  var group = userData.data().currentGroup;
+  var group = data.groupId;
   //if the group is null, then no group is joined
   if (!group) return { isError: true, errorType: 5 };
 
@@ -1432,6 +1534,7 @@ exports.submitAnswers = functions.https.onCall(async (data, context) => {
   var correctPoints = 0;
   var totalEventPoints = 0;
   recordQuestions.forEach((q) => {
+    if (!q.points) q.points = 0;
     totalEventPoints += q.points;
     if (q.isCorrect) {
       correctPoints += q.points;

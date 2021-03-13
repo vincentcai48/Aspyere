@@ -2,7 +2,7 @@ import React from "react";
 import { pFirestore, pFunctions } from "../../services/config";
 import { PContext } from "../../services/context";
 import pJumbo1 from "../../images/pJumbo1.jpg";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 
 //allPlatforms are in context, but only get filled out when
 class PlatformList extends React.Component {
@@ -15,31 +15,18 @@ class PlatformList extends React.Component {
     };
   }
 
-  componentDidMount() {
-    pFirestore
-      .collection("platforms")
-      .limit(20)
-      .get()
-      .then((platforms) => {
-        var arr = [];
-        platforms.docs.forEach((p) => {
-          arr.push({ ...p.data(), id: p.id });
-        });
-        this.context.setAllPlatforms(arr);
-      });
-  }
-
-  joinPlatform = (id) => {
-    if (
-      this.context.rootUserData.platform &&
-      this.context.rootUserData.allPlatforms &&
-      this.context.rootUserData.allPlatforms.includes(id)
-    ) {
-      this.context.joinPlatform(id);
-    } else {
-      this.context.setPlatform(id);
-    }
-  };
+  // joinPlatform = (id) => {
+  //   if (
+  //     this.context.rootUserData.platform &&
+  //     this.context.rootUserData.allPlatforms &&
+  //     this.context.rootUserData.allPlatforms.includes(id)
+  //   ) {
+  //     this.context.joinPlatform(id);
+  //   } else {
+  //     this.context.setPlatform(id);
+  //   }
+  //   this.setState({ redirect: `/platform?id=${id}` });
+  // };
 
   changeState = (e) => {
     const { name, value } = e.target;
@@ -63,6 +50,7 @@ class PlatformList extends React.Component {
   };
 
   render() {
+    if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
       <div id="platformList-container">
         <div
@@ -115,26 +103,24 @@ class PlatformList extends React.Component {
                       <i className="far fa-eye"></i>
                     </div>
                     {/* <div className="platform-id">ID: {p.id}</div> */}
-                    {p.id != this.context.rootUserData.platform ? (
+                    {this.context.rootUserData.allPlatforms.includes(p.id) ? (
                       <button
                         className="join-button"
-                        onClick={() => {
-                          this.joinPlatform(p.id);
-                        }}
+                        onClick={() =>
+                          this.setState({ redirect: `/platform?id=${p.id}` })
+                        }
                       >
-                        Join this Platform
+                        Joined
                       </button>
                     ) : (
                       <button
                         className="bb"
                         style={{ display: "block" }}
-                        onClick={() => {
-                          this.context.setPlatform(
-                            this.context.rootUserData.platform
-                          );
-                        }}
+                        onClick={() =>
+                          this.setState({ redirect: `/platform?id=${p.id}` })
+                        }
                       >
-                        Joined
+                        View this Platform
                       </button>
                     )}
                   </div>
@@ -174,26 +160,24 @@ class PlatformList extends React.Component {
                     <i className="far fa-eye"></i>
                   </div>
                   {/* <div className="platform-id">ID: {p.id}</div> */}
-                  {p.id != this.context.rootUserData.platform ? (
+                  {this.context.rootUserData.allPlatforms.includes(p.id) ? (
                     <button
                       className="join-button"
-                      onClick={() => {
-                        this.joinPlatform(p.id);
-                      }}
+                      onClick={() =>
+                        this.setState({ redirect: `/platform?id=${p.id}` })
+                      }
                     >
-                      Join this Platform
+                      Joined
                     </button>
                   ) : (
                     <button
                       className="bb"
                       style={{ display: "block" }}
-                      onClick={() => {
-                        this.context.setPlatform(
-                          this.context.rootUserData.platform
-                        );
-                      }}
+                      onClick={() =>
+                        this.setState({ redirect: `/platform?id=${p.id}` })
+                      }
                     >
-                      Joined
+                      View this Platform
                     </button>
                   )}
                 </div>

@@ -30,7 +30,7 @@ code {
   width: 100%;
 }
 
-#notHome-main {
+#site-afterLoading {
   width: 100%;
 }
 
@@ -277,7 +277,7 @@ header .header-s2 {
 
 .options-header {
   position: relative;
-  z-index: 100;
+  z-index: 15;
   height: 100%;
 }
 
@@ -393,9 +393,65 @@ header .header-s2 {
   box-shadow: 3px 3px 5px black;
 }
 
+.ml-0 {
+  margin-left: 0px;
+}
+
 /*stands for "no-scroll-popup"*/
 .nsp {
   overflow: hidden;
+}
+
+/* Full Screen Popup */
+.fsp {
+  position: fixed;
+  width: 90vw;
+  height: 100vh;
+  top: 0px;
+  left: 0px;
+  z-index: 11;
+  background-color: white;
+  overflow: scroll;
+}
+
+.fsp-header {
+  display: flex;
+  width: 100%;
+  height: 8vh;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background-color: lightgrey;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  margin: 0px;
+}
+
+.fsp-header .side-buttons {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.fsp-main {
+  padding: 10vh 5vw;
+  box-sizing: border-box;
+  z-index: 12;
+}
+
+.event-title-edit {
+  margin-bottom: 30px;
+  text-decoration: none;
+  font-weight: bolder;
+}
+
+.event-description-edit {
+  max-width: 450px;
+  min-width: 450px;
+  height: 60px;
 }
 
 #gIcon-image {
@@ -1326,6 +1382,39 @@ section.lobbyPlatform-header {
   margin: 0px auto 5vh auto;
 }
 
+.lobby-admin {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background-color: var(--sc);
+  border: 2px solid var(--sc);
+  border-radius: 5px;
+  color: white;
+  transition: all 0.2s;
+  padding: 10px 15px;
+  font-size: 18px;
+  font-weight: bolder;
+  box-shadow: 2px 2px 2px grey;
+  animation: lightflash 2s infinite;
+}
+
+@keyframes lightflash {
+  0% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.9;
+  }
+}
+
+.lobby-admin:hover {
+  color: var(--sc);
+  background-color: white;
+}
+
 #platform-info {
   margin: 0px 0px 10vh 0px;
   display: flex;
@@ -1990,6 +2079,7 @@ section.lobbyPlatform-header {
 .react-datepicker-component {
   font-size: 18px;
   font-weight: bolder;
+  z-index: 11;
 }
 
 #duration-inputs {
@@ -2062,6 +2152,22 @@ section#question-settings {
   font-size: 12px;
 }
 
+.qtype {
+  border-radius: 5px;
+  border: 2px solid green;
+  background-color: white;
+  margin: 5px 10px;
+  color: green;
+  padding: 3px 10px;
+  transition: all 0.2s;
+}
+
+.qtype:hover,
+.qtype.selected {
+  color: white;
+  background-color: green;
+}
+
 .or-text {
   font-weight: bolder;
   font-size: 20px;
@@ -2089,6 +2195,7 @@ section#question-settings {
   border-radius: 10px;
   box-shadow: 3px 3px 6px black;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   padding: 10px 20px;
   overflow-x: hidden;
@@ -2120,6 +2227,29 @@ section#question-settings {
 
 .single-question .q-db {
   margin: 5px 20px;
+}
+
+.generated-q-info {
+  display: flex;
+}
+
+.written-q-info {
+  margin: 20px 0px;
+}
+
+.written-q-info h5 {
+  margin: 0px;
+  padding: 0px;
+  font-size: 18px;
+}
+
+.written-q-info ul {
+  display: flex;
+  margin: 15px 5px 0px 5px;
+}
+
+.written-q-info ul li {
+  margin: 2px;
 }
 
 .editEvent-button {
@@ -2844,6 +2974,7 @@ input[name="topicInput"] {
 .platformPopup {
   padding: 40px 20px;
   position: relative;
+  color: black;
 }
 
 .platformPopup .first-row {
@@ -2912,8 +3043,17 @@ input[name="topicInput"] {
 .single-myPlatform .joined-text {
   font-weight: bold;
   color: var(--sc);
-  margin: 0px 20px;
+  margin: 10px 20px;
   text-shadow: 1px 1px 2px var(--sc);
+  border: none;
+  background-color: transparent;
+  opacity: 1;
+  transition: all 0.2s;
+  padding: 0px;
+}
+
+.joined-text:hover {
+  opacity: 0.8;
 }
 
 .create-platform.popup h4 {
@@ -3490,6 +3630,32 @@ footer {
   padding: 15px;
 }
 
+footer #legal-links {
+  display: flex;
+  padding: 10px 20px;
+}
+
+#legal-links .legal-link {
+  font-size: 16px;
+  color: lightgrey;
+  text-decoration: none;
+  transition: all 0.2s;
+  padding: 0px 10px;
+}
+
+#legal-links .legal-link:hover {
+  color: white;
+}
+
+#privacy-policy,
+#terms-and-conditions,
+#disclaimers,
+#contact-info {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5vh 5vw;
+}
+
 @media (max-width: 767px) and (min-width: 577px) {
   #joined-groups,
   #groups-list {
@@ -3780,5 +3946,23 @@ footer {
 
   .single-platform .p-Icon-inList {
     display: none;
+  }
+
+  .fsp-header {
+    justify-content: flex-start;
+    padding-left: 10px;
+  }
+
+  .fsp-header .side-buttons {
+    right: 5px;
+  }
+
+  .event-title-edit {
+    max-width: 250px;
+  }
+
+  .event-description-edit {
+    max-width: 250px;
+    min-width: 250px;
   }
 }

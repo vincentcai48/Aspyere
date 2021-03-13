@@ -96,13 +96,6 @@ class DBQuestions extends React.Component {
     };
     try {
       const compressedFile = await imageCompression(file, options);
-      // console.log(
-      //   "compressedFile instanceof Blob",
-      //   compressedFile instanceof Blob
-      // ); // true
-      // console.log(
-      //   `compressedFile size ${compressedFile.size / 1024 / 1024} MB`
-      // ); // smaller than maxSizeMB
 
       //Step 3: put into storage bucket.
       var dbId = parentThis.props.parentState.dbId || "databaseNotFound";

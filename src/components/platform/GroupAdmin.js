@@ -10,7 +10,19 @@ import Loading from "../Loading";
 import personIcon from "../../images/person-icon.png";
 import MyStats from "./MyStats";
 
-//PROPS: Object() groupData, Function() getGroupAdminData, Array[] recentActivity, Array[] allUsers, Date() lastViewed, Object() privateGroupSettings, String groupName, Number limit, Function() getLastViewed (only to get the initial last viewed from firestore. Only call it in componentDidMount())
+/*PROPS:
+ Object() groupData, 
+ Function() getGroupAdminData, 
+ Array[] recentActivity, 
+ Array[] allUsers, 
+ Date() lastViewed, 
+ Object() privateGroupSettings, 
+ String groupName, 
+ Number limit, 
+ Function() getLastViewed (only to get the initial last viewed from firestore. Only call it in componentDidMount())
+ String platformId
+String groupId
+*/
 class GroupAdmin extends React.Component {
   constructor() {
     super();
@@ -54,10 +66,13 @@ class GroupAdmin extends React.Component {
       inputJoinCode: this.props.privateGroupSettings.joinCode,
       inputDifficulty: this.props.groupData.difficulty,
     });
-    this.props.getLastViewed(this.props.groupData.id);
+
+    //DO THIS IN PLATFORM.JS, ONLY IF ADMIN THOUGH.
+    //this.props.getLastViewed(this.props.groupData.id);
+
     // var doc = await pFirestore
     //   .collection("platforms")
-    //   .doc(this.context.platform)
+    //   .doc(this.props.platformId)
     //   .collection("users")
     //   .doc(pAuth.currentUser.uid)
     //   .get();
@@ -72,7 +87,7 @@ class GroupAdmin extends React.Component {
     //   await this.props.getGroupAdminData(lastViewed, new Date());
     //   var updateUserViewTime = pFunctions.httpsCallable("updateUserViewTime");
     //   updateUserViewTime({
-    //     platformId: this.context.platform,
+    //     platformId: this.props.platformId,
     //     fieldName: fieldName,
     //   })
     //     .then(() => {})
@@ -185,7 +200,7 @@ class GroupAdmin extends React.Component {
     this.setState({ isLoading: true });
     var updateGroupSettings = pFunctions.httpsCallable("updateGroupSettings");
     updateGroupSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
       updates: {
         name: this.state.inputName,
@@ -212,7 +227,7 @@ class GroupAdmin extends React.Component {
       "updatePrivateGroupSettings"
     );
     updatePrivateGroupSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
       privateSettings: {
         joinCode: this.state.inputJoinCode,
@@ -235,7 +250,7 @@ class GroupAdmin extends React.Component {
     this.setState({ userToPromote: null, isLoading: true });
     var promoteGroupUser = pFunctions.httpsCallable("promoteGroupUser");
     promoteGroupUser({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
       userToPromote: userToPromote,
     })
@@ -265,7 +280,7 @@ class GroupAdmin extends React.Component {
     else {
       var userDataDoc = await pFirestore
         .collection("platforms")
-        .doc(this.context.platform)
+        .doc(this.props.platformId)
         .collection("users")
         .doc(userId)
         .collection(this.props.groupData.id)
@@ -291,7 +306,7 @@ class GroupAdmin extends React.Component {
     this.setState({ isLoading: true });
     var deleteGroup = pFunctions.httpsCallable("deleteGroup");
     deleteGroup({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       groupId: this.props.groupData.id,
     })
       .then((res) => {
@@ -299,7 +314,7 @@ class GroupAdmin extends React.Component {
           this.setState({ isLoading: false, isError: true });
         } else {
           this.setState({ isLoading: false });
-          window.location.reload();
+          this.props.setRedirect(`/platform?id=${this.props.platformId}`);
         }
       })
       .catch((e) => {
@@ -312,7 +327,7 @@ class GroupAdmin extends React.Component {
     var groupId = this.props.groupData.id || "individual";
     var query = pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.props.platformId)
       .collection("users")
       .doc(userId)
       .collection(groupId)
@@ -361,6 +376,7 @@ class GroupAdmin extends React.Component {
           <ul>
             {[...this.props.recentActivity].map((a) => {
               var score = this.getScore(a.questions);
+
               return (
                 <li className="single-activity" key={a.eventName}>
                   <div className="activity-time">
@@ -404,24 +420,24 @@ class GroupAdmin extends React.Component {
                   if (this.props.groupData.admins.includes(b.id)) return 1;
                   return 1;
                 })
-                .map((user) => {
+                .map((userId) => {
                   return (
-                    <li key={user.id}>
+                    <li key={userId}>
                       <div className="li-main">
                         <div className="member-name">
                           <img className="person-icon" src={personIcon} />
-                          {this.context.usersMapping[user.id]}
+                          {this.context.usersMapping[userId]}
                         </div>
                         <div>
                           {this.props.groupData &&
                           this.props.groupData.admins &&
-                          this.props.groupData.admins.includes(user.id) ? (
+                          this.props.groupData.admins.includes(userId) ? (
                             <span className="admin-label">Admin</span>
                           ) : (
                             <button
                               className="promote-admin"
                               onClick={() =>
-                                this.setState({ userToPromote: user.id })
+                                this.setState({ userToPromote: userId })
                               }
                             >
                               Promote to Admin
@@ -431,7 +447,7 @@ class GroupAdmin extends React.Component {
                         <div>
                           <button
                             className="sb"
-                            onClick={() => this.openStatsPage(user.id)}
+                            onClick={() => this.openStatsPage(userId)}
                           >
                             View Stats Page
                           </button>
@@ -642,7 +658,7 @@ class GroupAdmin extends React.Component {
           <div className="grayed-out-background">
             <div className="popup statspopup">
               <MyStats
-                userData={this.state.statsPageData}
+                myStats={this.state.statsPageData}
                 groupName={this.props.groupName}
                 userName={this.state.statsUserName}
                 getCompletedEvents={() =>

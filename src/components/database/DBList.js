@@ -145,7 +145,7 @@ class DBList extends React.Component {
             AspyereBase Databases <i className="fas fa-database"></i>
           </h3>
           <p>
-            Store all your question data in your own AspyereBase Database, and
+            Store all your questions in your own AspyereBase Database, and
             connect it easily to any platform you like. Administer your database
             with flexible settings and user management, controlling who can view
             and edit your database.

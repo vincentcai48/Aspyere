@@ -6,7 +6,19 @@ import { displayTime } from "../../services/globalFunctions";
 import Loading from "../Loading";
 import EditEvent from "./EditEvent";
 
-//PROPS: Boolean isAdmin, Object dbMapping, Object userData, Function getAllEvents(), Function getPastEvents(), Array[] allEvents, Array[] pastEvents, Function() refreshAllEvents(), Function refreshPastEvents()
+/*PROPS: 
+Boolean isAdmin, 
+Object dbMapping, 
+Object userData, 
+Function getAllEvents(), 
+Function getPastEvents(), 
+Array[] allEvents, 
+Array[] pastEvents, 
+Function() refreshAllEvents(), 
+Function refreshPastEvents(),
+String platformId,
+String groupId,
+*/
 class EventsList extends React.Component {
   constructor() {
     super();
@@ -63,7 +75,7 @@ class EventsList extends React.Component {
     var asDs = isPast ? "desc" : "asc";
     pFirestore
       .collection("platforms")
-      .doc(this.context.platform)
+      .doc(this.props.platformId)
       .collection("events")
       .where("endTime", comparison, nowTime)
       .orderBy("endTime", asDs)
@@ -98,7 +110,7 @@ class EventsList extends React.Component {
   };
 
   beginEventProxy = (eventId) => {
-    const url = `/questions?event=${eventId}&platform=${this.context.platform}`;
+    const url = `/questions?event=${eventId}&platform=${this.props.platformId}&group=${this.props.groupId}`;
     this.setState({ redirect: url });
   };
 
@@ -215,14 +227,7 @@ class EventsList extends React.Component {
             if (isOver && !this.state.isPast) return;
 
             return (
-              <li
-                key={e.id}
-                className={
-                  isCompleted && !this.state.isPast
-                    ? "single-event completed"
-                    : "single-event"
-                }
-              >
+              <li key={e.id} className="single-event">
                 {this.props.isAdmin && (
                   <button
                     className="sb edit-event-button"
@@ -285,7 +290,7 @@ class EventsList extends React.Component {
                       className="bb feedback-button"
                       onClick={() => {
                         this.setState({
-                          redirect: `questions?event=${e.id}&platform=${this.context.platform}`,
+                          redirect: `questions?event=${e.id}&platform=${this.props.platformId}&group=${this.props.groupId}`,
                         });
                       }}
                     >
@@ -311,6 +316,7 @@ class EventsList extends React.Component {
               eventId={this.state.eventToEdit}
               eventData={this.state.editEventData}
               dbMapping={this.props.dbMapping}
+              platformId={this.props.platformId}
               closeFunction={() =>
                 this.setState({
                   showAdd: false,

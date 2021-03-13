@@ -3,7 +3,7 @@ import { PContext } from "../../services/context";
 import { displayTime } from "../../services/globalFunctions";
 import TextDisplay from "../TextDisplay";
 
-//PROPS: Object() userData (this includes the ID), String groupName, Array[] completedEvents, Function() getCompletedEvents(), Function() refreshCompletedEvents()
+//PROPS: Object() myStats (this includes the ID), String groupName, Array[] completedEvents, Function() getCompletedEvents(), Function() refreshCompletedEvents()
 class MyStats extends React.Component {
   constructor(props) {
     super();
@@ -31,16 +31,18 @@ class MyStats extends React.Component {
   };
 
   render() {
-    var d = this.props.userData;
-    var isNoStats = false;
-    var weeks = d.startTime
-      ? Math.abs(
-          (d.startTime.toDate().getTime() - new Date().getTime()) /
-            (7 * 24 * 60 * 60 * 1000)
-        )
-      : 0.9;
+    var d = this.props.myStats;
     if (!d || (!d.totalPoints && !d.totalEvents && !d.totalPossiblePoints))
       isNoStats = true;
+    else {
+      var isNoStats = false;
+      var weeks = d.startTime
+        ? Math.abs(
+            (d.startTime.toDate().getTime() - new Date().getTime()) /
+              (7 * 24 * 60 * 60 * 1000)
+          )
+        : 0.9;
+    }
     return (
       <div id="user-stats-container">
         <section id="myStats">

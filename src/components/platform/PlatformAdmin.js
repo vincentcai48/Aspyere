@@ -4,7 +4,13 @@ import { PContext } from "../../services/context";
 import Loading from "../Loading";
 import imageCompression from "browser-image-compression";
 
-//PROPS: Object() platformSettings, Object() privateSettings, Object() dbMapping
+/*
+PROPS: Object() platformSettings, 
+Object() privateSettings, 
+Object() dbMapping
+String platformId
+String groupId
+*/
 class PlatformAdmin extends React.Component {
   constructor() {
     super();
@@ -85,7 +91,7 @@ class PlatformAdmin extends React.Component {
     );
 
     updatePlatformSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       updates: {
         groupOptions: newGroupOptions,
       },
@@ -119,7 +125,7 @@ class PlatformAdmin extends React.Component {
     );
 
     updatePlatformSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       updates: {
         groupOptions: newGroupOptions,
       },
@@ -151,8 +157,9 @@ class PlatformAdmin extends React.Component {
     var updatePlatformSettings = pFunctions.httpsCallable(
       "updatePlatformSettings"
     );
+    console.log(this.props.platformId);
     updatePlatformSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       updates: updates,
       privateSettingsUpdates: privateSettingsUpdates,
     })
@@ -166,7 +173,7 @@ class PlatformAdmin extends React.Component {
       "connectDatabaseToPlatform"
     );
     connectDatabaseToPlatform({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       dbId: this.state.dbToConnect,
     })
       .then((res) => {
@@ -195,7 +202,7 @@ class PlatformAdmin extends React.Component {
       "disconnectDatabaseToPlatform"
     );
     disconnectDatabaseToPlatform({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       dbId: this.state.dbToDisconnect,
     })
       .then(() => {
@@ -216,14 +223,14 @@ class PlatformAdmin extends React.Component {
     };
     const compressedFile = await imageCompression(file, options);
     const storageRef = await pStorageRef
-      .child("platforms/" + this.context.platform + "/bannerImage")
+      .child("platforms/" + this.props.platformId + "/bannerImage")
       .put(compressedFile);
     const url = await storageRef.ref.getDownloadURL();
     var updatePlatformSettings = pFunctions.httpsCallable(
       "updatePlatformSettings"
     );
     updatePlatformSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       updates: {
         bannerURL: url,
       },
@@ -250,14 +257,14 @@ class PlatformAdmin extends React.Component {
     };
     const compressedFile = await imageCompression(file, options);
     const storageRef = await pStorageRef
-      .child("platforms/" + this.context.platform + "/iconImage")
+      .child("platforms/" + this.props.platformId + "/iconImage")
       .put(compressedFile);
     const url = await storageRef.ref.getDownloadURL();
     var updatePlatformSettings = pFunctions.httpsCallable(
       "updatePlatformSettings"
     );
     updatePlatformSettings({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       updates: {
         iconURL: url,
       },
@@ -276,7 +283,7 @@ class PlatformAdmin extends React.Component {
 
     var forgive = pFunctions.httpsCallable("forgive");
     forgive({
-      platformId: this.context.platform,
+      platformId: this.props.platformId,
       questionId: this.state.forgiveId,
       forgiveAnswer: this.state.forgiveAnswer,
     })
@@ -299,7 +306,7 @@ class PlatformAdmin extends React.Component {
     try {
       var acceptAdminRequest = pFunctions.httpsCallable("acceptAdminRequest");
       var res = await acceptAdminRequest({
-        platformId: this.context.platform,
+        platformId: this.props.platformId,
         userId: this.state.userToAccept,
       });
       if (res.data.isError) {
@@ -317,7 +324,7 @@ class PlatformAdmin extends React.Component {
     try {
       var rejectAdminRequest = pFunctions.httpsCallable("rejectAdminRequest");
       var res = await rejectAdminRequest({
-        platformId: this.context.platform,
+        platformId: this.props.platformId,
         userId: userId,
       });
       if (res.data.isError) {
