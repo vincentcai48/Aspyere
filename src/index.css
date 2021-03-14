@@ -509,6 +509,14 @@ button:focus {
 
 #auth-container h2 {
   font-size: 30px;
+  margin-bottom: 0px;
+}
+
+#auth-policy-notice {
+  margin-top: 5px;
+  margin-bottom: 30px;
+  font-size: 10px;
+  max-width: 300px;
 }
 
 .ep-button {
