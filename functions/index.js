@@ -141,6 +141,29 @@ exports.updateUsername = functions.https.onCall(async (data, context) => {
   }
 });
 
+exports.onDeleteUser = functions.auth.user().onDelete(async (user) => {
+  const uid = user.uid;
+
+  //Step 1: delete the root user doc.
+  await db.collection("users").doc(uid).delete();
+
+  //Step 2: delete the usersMapping record
+  var allUsersMapping = await db.collection("usersMapping").get();
+  allUsersMapping.docs.forEach(async (doc) => {
+    var docData = { ...doc.data() };
+    if (docData[uid]) {
+      delete docData[uid];
+      try {
+        //set the doc to the original data, minus the single property of the deleted user.
+        await doc.ref.set(docData);
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+    }
+  });
+});
+
 //data: String[] of uids
 exports.getUsersMapping = functions.https.onCall(async (data, context) => {
   try {

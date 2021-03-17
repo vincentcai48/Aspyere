@@ -55,6 +55,16 @@ function Account() {
     setLoading(false);
   };
 
+  const deleteAccount = async () => {
+    setLoading(true);
+    try {
+      await pAuth.currentUser.delete();
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
   if (!isAuth) return <Auth />;
   return (
     <div id="account-container">
@@ -76,6 +86,10 @@ function Account() {
 
       <button id="logout-button" onClick={logout}>
         Logout
+      </button>
+
+      <button className="bb" onClick={}>
+        Delete This Account
       </button>
 
       {loading && (
