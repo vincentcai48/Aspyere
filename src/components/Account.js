@@ -8,8 +8,10 @@ import Loading from "./Loading";
 function Account() {
   const [isAuth, changeIsAuth] = useState(pAuth.currentUser);
   const [usernamePopup, setUsernamePopup] = useState(false);
+  const [deletePopup, setDeletePopup] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
   const [loading, setLoading] = useState("");
+  const [confirmText, setConfirmText] = useState("");
   const context = useContext(PContext);
 
   pAuth.onAuthStateChanged((user) => {
@@ -20,8 +22,8 @@ function Account() {
     }
   });
 
-  var logout = () => {
-    pAuth
+  var logout = async () => {
+    await pAuth
       .signOut()
       .then(() => {})
       .catch(() => {});
@@ -57,8 +59,11 @@ function Account() {
 
   const deleteAccount = async () => {
     setLoading(true);
+    setDeletePopup(false);
+    var user = { ...pAuth.currentUser };
+    await logout();
     try {
-      await pAuth.currentUser.delete();
+      await user.delete();
     } catch (e) {
       console.error(e);
     }
@@ -88,13 +93,18 @@ function Account() {
         Logout
       </button>
 
-      <button className="bb" onClick={}>
+      <button
+        className="bb delete-account-button"
+        onClick={() => setDeletePopup(true)}
+      >
         Delete This Account
       </button>
 
       {loading && (
         <div className="grayed-out-background">
-          <Loading isFullCenter={true} />
+          <div className="popup nsp">
+            <Loading />
+          </div>
         </div>
       )}
 
@@ -105,6 +115,7 @@ function Account() {
             <input
               onChange={(e) => setUsernameInput(e.target.value)}
               placeholder="New Username"
+              value={usernameInput}
             ></input>
             <button className="submit-button" onClick={updateUsername}>
               Change My Username
@@ -114,6 +125,41 @@ function Account() {
               onClick={() => {
                 setUsernamePopup(false);
                 setUsernameInput("");
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {deletePopup && (
+        <div className="grayed-out-background">
+          <div className="popup red nsp">
+            <h4>Are You Sure You Want to Delete Your Account?</h4>
+            <p>
+              This action is irreversible. This will delete all your account
+              information, and you will not be able to log into this account
+              again. Records you made on Aspyere will remain (e.g. questions you
+              added to a database), but you will no longer be able to access
+              them under this account.
+            </p>
+            <input
+              className="redinput"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="confirm"
+            ></input>
+            {confirmText === "confirm" && (
+              <button className="cancel-button" onClick={deleteAccount}>
+                Delete My Account
+              </button>
+            )}
+            <button
+              className="cancel-button"
+              onClick={() => {
+                setConfirmText("");
+                setDeletePopup(false);
               }}
             >
               Cancel
