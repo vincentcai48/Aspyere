@@ -61,9 +61,10 @@ function Account() {
     setLoading(true);
     setDeletePopup(false);
     var user = { ...pAuth.currentUser };
-    await logout();
+
     try {
-      await user.delete();
+      await pAuth.currentUser.delete();
+      await logout();
     } catch (e) {
       console.error(e);
     }
@@ -71,6 +72,7 @@ function Account() {
   };
 
   if (!isAuth) return <Auth />;
+  if (!pAuth.currentUser.uid) return;
   return (
     <div id="account-container">
       <h2>Account</h2>
