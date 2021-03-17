@@ -64,9 +64,13 @@ function Account() {
         className="account-img"
       ></img>
       <div className="account-displayName">
+        <span className="username-text">Username:</span>{" "}
         {context.rootUserData.displayName || pAuth.currentUser.email}
       </div>
-      <button className="" onClick={() => setUsernamePopup(true)}>
+      <button
+        className="ssb reset-username-button"
+        onClick={() => setUsernamePopup(true)}
+      >
         Reset Username
       </button>
 
@@ -74,7 +78,11 @@ function Account() {
         Logout
       </button>
 
-      {loading && <Loading isFullCenter={true} />}
+      {loading && (
+        <div className="grayed-out-background">
+          <Loading isFullCenter={true} />
+        </div>
+      )}
 
       {usernamePopup && (
         <div className="grayed-out-background">

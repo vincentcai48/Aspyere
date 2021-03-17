@@ -2304,7 +2304,9 @@ input[name="topicInput"] {
 }
 
 #account-container {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-top: 30px;
 }
 
@@ -2352,6 +2354,18 @@ input[name="topicInput"] {
   display: block;
   font-size: 18px;
   margin: 10px 0px;
+}
+
+.username-text {
+  font-size: 14px;
+  color: grey;
+  margin-right: 5px;
+}
+
+.reset-username-button {
+  margin-top: 10px;
+  display: block;
+  text-align: center;
 }
 
 #liveQuestions-container {
