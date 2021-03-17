@@ -1,11 +1,15 @@
 import React, { useContext, useState } from "react";
-import { pAuth } from "../services/config";
+import { pAuth, pFunctions } from "../services/config";
 import { PContext } from "../services/context";
 import Auth from "./Auth";
 import personIcon from "../images/person-icon.png";
+import Loading from "./Loading";
 
 function Account() {
   const [isAuth, changeIsAuth] = useState(pAuth.currentUser);
+  const [usernamePopup, setUsernamePopup] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [loading, setLoading] = useState("");
   const context = useContext(PContext);
 
   pAuth.onAuthStateChanged((user) => {
@@ -23,6 +27,34 @@ function Account() {
       .catch(() => {});
   };
 
+  const sendPasswordResetEmail = async () => {
+    try {
+      await pAuth.sendPasswordResetEmail(pAuth.currentUser.email);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const updateUsername = async () => {
+    setUsernamePopup(false);
+    setLoading(true);
+    const username = usernameInput;
+    try {
+      await pAuth.currentUser.updateProfile({
+        displayName: username,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    try {
+      var updateUsername = pFunctions.httpsCallable("updateUsername");
+      await updateUsername({ username: username });
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+
   if (!isAuth) return <Auth />;
   return (
     <div id="account-container">
@@ -34,9 +66,39 @@ function Account() {
       <div className="account-displayName">
         {context.rootUserData.displayName || pAuth.currentUser.email}
       </div>
+      <button className="" onClick={() => setUsernamePopup(true)}>
+        Reset Username
+      </button>
+
       <button id="logout-button" onClick={logout}>
         Logout
       </button>
+
+      {loading && <Loading isFullCenter={true} />}
+
+      {usernamePopup && (
+        <div className="grayed-out-background">
+          <div className="popup nsp username-popup">
+            <h5>Change Username</h5>
+            <input
+              onChange={(e) => setUsernameInput(e.target.value)}
+              placeholder="New Username"
+            ></input>
+            <button className="submit-button" onClick={updateUsername}>
+              Change My Username
+            </button>
+            <button
+              className="cancel-button"
+              onClick={() => {
+                setUsernamePopup(false);
+                setUsernameInput("");
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

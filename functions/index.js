@@ -113,6 +113,34 @@ exports.onNewUser = functions.auth.user().onCreate(async (user) => {
   }
 });
 
+// data: {String username: }
+exports.updateUsername = functions.https.onCall(async (data, context) => {
+  if (!context.auth.uid) return;
+  try {
+    //Step 1: Update the root user doc.
+    await db
+      .collection("users")
+      .doc(context.auth.uid)
+      .update({ displayName: data.username });
+
+    //Step 2: Update the usersMapping record.
+    var allUsersMapping = await db.collection("usersMapping").get();
+    allUsersMapping.docs.forEach(async (doc) => {
+      if (doc.data()[context.auth.uid]) {
+        try {
+          await doc.ref.update({ [context.auth.uid]: data.username });
+        } catch (e) {
+          console.error(e);
+          return;
+        }
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+});
+
 //data: String[] of uids
 exports.getUsersMapping = functions.https.onCall(async (data, context) => {
   try {
