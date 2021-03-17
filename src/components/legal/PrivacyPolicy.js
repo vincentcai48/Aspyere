@@ -3,6 +3,8 @@ export default function PrivacyPolicy() {
     <div id="privacy-policy">
       <h1>Privacy Policy for Aspyere</h1>
 
+      <h5>Updated March 17 2021</h5>
+
       <p>
         At Aspyere, accessible from https://aspyere.com/, one of our main
         priorities is the privacy of our visitors. This Privacy Policy document
