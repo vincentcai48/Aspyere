@@ -1,6 +1,7 @@
 import React from "react";
 import { Redirect } from "react-router";
 import gIcon from "../images/googleicon.png";
+import { Link } from "react-router-dom";
 import {
   fbFieldValue,
   googleAuthProvider,
@@ -88,7 +89,13 @@ class Auth extends React.Component {
     return (
       <div id="auth-container">
         <h2>Login</h2>
-        <p>{pAuth.currentUser && pAuth.currentUser.displayName}</p>
+        <section id="auth-policy-notice">
+          <p>
+            By logging in and by using our website, you agree to our{" "}
+            <Link to="/privacypolicy">Privacy Policy</Link> and{" "}
+            <Link to="/termsandconditions">Terms and Conditions</Link>.{" "}
+          </p>
+        </section>
         <button id="auth-button" onClick={this.login}>
           <img
             id="gIcon-image"
@@ -96,6 +103,7 @@ class Auth extends React.Component {
           ></img>
           Login With Google
         </button>
+
         <section>
           <button
             className="ep-button"
