@@ -5,6 +5,8 @@ export default function Termsandconditions() {
         <strong>Terms and Conditions</strong>
       </h2>
 
+      <h5>Last updated: March 17, 2021</h5>
+
       <p>
         These terms and conditions outline the rules and regulations for the use
         of Aspyere's Website, located at https://aspyere.com/.
@@ -70,18 +72,7 @@ export default function Termsandconditions() {
         <li>Redistribute content from Aspyere</li>
       </ul>
 
-      <p>
-        This Agreement shall begin on the date hereof. Our Terms and Conditions
-        were created with the help of the{" "}
-        <a href="https://www.termsandconditionsgenerator.com">
-          Terms And Conditions Generator
-        </a>{" "}
-        and the{" "}
-        <a href="https://www.generateprivacypolicy.com">
-          Privacy Policy Generator
-        </a>
-        .
-      </p>
+      <p>This Agreement shall begin on the date hereof.</p>
 
       <p>
         Parts of this website offer an opportunity for users to post and

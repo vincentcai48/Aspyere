@@ -2312,7 +2312,9 @@ input[name="topicInput"] {
 }
 
 #account-container {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-top: 30px;
 }
 
@@ -2348,6 +2350,51 @@ input[name="topicInput"] {
 #logout-button:hover {
   color: var(--sc);
   background-color: white;
+}
+
+.username-popup h5 {
+  margin: 15px 0px;
+  font-size: 24px;
+  text-align: left;
+}
+
+.username-popup input {
+  display: block;
+  font-size: 18px;
+  margin: 10px 0px;
+}
+
+.username-text {
+  font-size: 14px;
+  color: grey;
+  margin-right: 5px;
+}
+
+.reset-username-button {
+  margin-top: 10px;
+  display: block;
+  text-align: center;
+}
+
+.delete-account-button {
+  margin-top: 20vh;
+  margin-bottom: 30px;
+}
+
+.password-reset-container {
+  margin-top: 50px;
+}
+
+.password-reset-container h6 {
+  margin: 10px 0px;
+  font-size: 18px;
+}
+
+.password-reset-button {
+  font-size: 14px;
+  margin: 10px 0px;
+  font-weight: 100;
+  border-width: 2px;
 }
 
 #liveQuestions-container {

@@ -20,6 +20,7 @@ class Auth extends React.Component {
       loginPassword: "",
       errorMessage: null,
       redirect: null,
+      passwordResetEmailInput: "",
     };
   }
 
@@ -43,6 +44,16 @@ class Auth extends React.Component {
       //     //   }
       //   });
     });
+  };
+
+  sendPasswordResetEmail = async () => {
+    try {
+      await pAuth.sendPasswordResetEmail(this.state.passwordResetEmailInput);
+      alert("Successfully Sent Password Reset Email");
+    } catch (e) {
+      console.error(e);
+      alert("An Error Occurred. Cannot Send Password Reset Email");
+    }
   };
 
   changeState = (e) => {
@@ -147,6 +158,21 @@ class Auth extends React.Component {
                 <button className="sb" onClick={this.emailLogin}>
                   Login
                 </button>
+                <div className="password-reset-container">
+                  <h6>Forgot Password?</h6>
+                  <input
+                    name="passwordResetEmailInput"
+                    onChange={this.changeState}
+                    value={this.passwordResetEmailInput}
+                    placeholder="Email"
+                  ></input>
+                  <button
+                    className="bb password-reset-button"
+                    onClick={this.sendPasswordResetEmail}
+                  >
+                    Send Password Reset Email
+                  </button>
+                </div>
               </section>
             </div>
           )}
