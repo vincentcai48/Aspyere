@@ -149,6 +149,14 @@ export default function PrivacyPolicy() {
         diagnostic data.
       </p>
       <p>
+        We may also collect usage data regarding Your activity when You use this
+        Service. This may include, but is not limited to, the platforms a user
+        joins, the groups or classes a user joins, the points scored by a user
+        per event, the questions answered correctly or incorrectly, the events a
+        user completes, and the exact time at which a user joins a platform or
+        completes an event.
+      </p>
+      <p>
         When You access the Service by or through a mobile device, We may
         collect certain information automatically, including, but not limited
         to, the type of mobile device You use, Your mobile device unique ID, the
@@ -261,6 +269,7 @@ export default function PrivacyPolicy() {
         Privacy Policy.
       </p>
       <h2>Use of Your Personal Data</h2>
+      <p></p>
       <p>The Company may use Personal Data for the following purposes:</p>
       <ul>
         <li>
@@ -331,6 +340,10 @@ export default function PrivacyPolicy() {
           </p>
         </li>
       </ul>
+      <p>
+        We do not share, rent, or sell any Personal Data to any third parties
+        for commerical uses.
+      </p>
       <p>We may share Your personal information in the following situations:</p>
       <ul>
         <li>
@@ -398,7 +411,7 @@ export default function PrivacyPolicy() {
       <h2>Transfer of Your Personal Data</h2>
       <p>
         Your information, including Personal Data, is processed at the Company's
-        operating offices and in any other places where the parties involved in
+        operating location and in any other places where the parties involved in
         the processing are located. It means that this information may be
         transferred to — and maintained on — computers located outside of Your
         state, province, country or other governmental jurisdiction where the
@@ -451,8 +464,8 @@ export default function PrivacyPolicy() {
         The security of Your Personal Data is important to Us, but remember that
         no method of transmission over the Internet, or method of electronic
         storage is 100% secure. While We strive to use commercially acceptable
-        means to protect Your Personal Data, We cannot guarantee its absolute
-        security.
+        means to protect Your Personal Data, such as HTTPS transfer protocol, We
+        cannot guarantee its absolute security.
       </p>
       <h1>Children's Privacy</h1>
       <p>
