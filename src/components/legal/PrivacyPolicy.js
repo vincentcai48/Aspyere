@@ -2,7 +2,7 @@ export default function PrivacyPolicy() {
   return (
     <div id="privacy-policy">
       <h1>Privacy Policy</h1>
-      <p>Last updated: March 14, 2021</p>
+      <h5>Last updated: March 17, 2021</h5>
       <p>
         This Privacy Policy describes Our policies and procedures on the
         collection, use and disclosure of Your information when You use the
@@ -35,7 +35,7 @@ export default function PrivacyPolicy() {
           <p>
             <strong>Company</strong> (referred to as either &quot;the
             Company&quot;, &quot;We&quot;, &quot;Us&quot; or &quot;Our&quot; in
-            this Agreement) refers to Aspyere.com.
+            this Agreement) refers to Aspyere.
           </p>
         </li>
         <li>
@@ -48,7 +48,7 @@ export default function PrivacyPolicy() {
         </li>
         <li>
           <p>
-            <strong>Country</strong> refers to: Connecticut, United States
+            <strong>Country</strong> refers to: United States of America
           </p>
         </li>
         <li>
@@ -129,6 +129,13 @@ export default function PrivacyPolicy() {
           <p>First name and last name</p>
         </li>
         <li>
+          <p>
+            Profile picture and URL to the profile picture. (Collected when an
+            Account is registered with a third party identity provider, such as
+            Google.){" "}
+          </p>
+        </li>
+        <li>
           <p>Usage Data</p>
         </li>
       </ul>
@@ -200,11 +207,7 @@ export default function PrivacyPolicy() {
         Cookies can be &quot;Persistent&quot; or &quot;Session&quot; Cookies.
         Persistent Cookies remain on Your personal computer or mobile device
         when You go offline, while Session Cookies are deleted as soon as You
-        close Your web browser. You can learn more about cookies here:{" "}
-        <a href="https://www.termsfeed.com/blog/cookies/" target="_blank">
-          All About Cookies by TermsFeed
-        </a>
-        .
+        close Your web browser .
       </p>
       <p>
         We use both Session and Persistent Cookies for the purposes set out
@@ -226,7 +229,7 @@ export default function PrivacyPolicy() {
             provide You with those services.
           </p>
         </li>
-        <li>
+        {/* <li>
           <p>
             <strong>Cookies Policy / Notice Acceptance Cookies</strong>
           </p>
@@ -236,7 +239,7 @@ export default function PrivacyPolicy() {
             Purpose: These Cookies identify if users have accepted the use of
             cookies on the Website.
           </p>
-        </li>
+        </li> */}
         <li>
           <p>
             <strong>Functionality Cookies</strong>
@@ -341,18 +344,18 @@ export default function PrivacyPolicy() {
           any merger, sale of Company assets, financing, or acquisition of all
           or a portion of Our business to another company.
         </li>
-        <li>
+        {/* <li>
           <strong>With Affiliates:</strong> We may share Your information with
           Our affiliates, in which case we will require those affiliates to
           honor this Privacy Policy. Affiliates include Our parent company and
           any other subsidiaries, joint venture partners or other companies that
           We control or that are under common control with Us.
-        </li>
-        <li>
+        </li> */}
+        {/* <li>
           <strong>With business partners:</strong> We may share Your information
           with Our business partners to offer You certain products, services or
           promotions.
-        </li>
+        </li> */}
         <li>
           <strong>With other users:</strong> when You share personal information
           or otherwise interact in the public areas with other users, such
@@ -362,7 +365,14 @@ export default function PrivacyPolicy() {
           Social Media Service may see Your name, profile, pictures and
           description of Your activity. Similarly, other users will be able to
           view descriptions of Your activity, communicate with You and view Your
-          profile.
+          profile. Aspyere will generate a username that will be displayed
+          publicly to all other users on the website when a user first registers
+          or signs into an account. This username is typically initially set to
+          the sequence of characters preceding the "@" of the email address the
+          user provided the website with when first registering, or the user's
+          first name and last name if using certain third party identity
+          providers to authenticate. Your username may be changed at anytime on
+          the "account" page.
         </li>
         <li>
           <strong>With Your consent</strong>: We may disclose Your personal
