@@ -160,7 +160,7 @@ class LobbyPlatform extends React.Component {
       if (this.props.groupOption) {
         var thisOption = this.props.groupOptions.filter(
           (e) => e.description == this.state.selectedGroupOption
-        )[0];
+        );
         if (thisOption.length > 0) difficulty = thisOption[0];
       }
     }
