@@ -2837,6 +2837,7 @@ input[name="topicInput"] {
   font-weight: bolder;
   border-radius: 5px;
   box-shadow: 1px 1px 3px black;
+  width: auto;
 }
 
 .promote-admin {
@@ -4019,5 +4020,26 @@ footer #legal-links {
   .event-description-edit {
     max-width: 250px;
     min-width: 250px;
+  }
+  footer {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  footer #legal-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px 0px;
+    padding: 0px;
+  }
+
+  #legal-links li{
+    margin: 3px 0px;
+  }
+
+  /*for group members formatting*/
+  #groupUsers-list li .li-main div {
+    display: inline;
   }
 }

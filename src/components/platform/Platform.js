@@ -62,6 +62,7 @@ class Platform extends React.Component {
   }
 
   async componentDidMount(isOverride, newPId, newGId) {
+    console.log("componentDidMount")
     //Step 1: get the url param id and set to a var in state.
     const queryString = window.location.search;
     this.setState({ currentRoute: queryString });
@@ -111,6 +112,8 @@ class Platform extends React.Component {
           //Here we get the group and user data (if a group a joined). One-time get this data.
           //first time, get this data just once. Snapshot listener updates when platform settings change. You don't want to do all this everytime the platform admin settings update.
           if (isFirstTime) {
+            isFirstTime = false;
+            console.log("First Time",isFirstTime)
             //Step 3: get the necessary userMapping usernames
             await this.context.getUsersMapping(doc.data().members);
 
@@ -134,7 +137,7 @@ class Platform extends React.Component {
             }
 
             if (isAdmin) this.getPrivateSettings();
-            isFirstTime = false;
+            
             //HERE YOU SET THE SECOND STAGE TO FALSE
           }
           //Database Mapping
@@ -227,6 +230,7 @@ class Platform extends React.Component {
             .catch((e) => console.error(e));
 
           //AND recent activity as well
+          
           this.getLastViewed(doc.id);
         } else {
           //else stop the loading
@@ -341,6 +345,7 @@ class Platform extends React.Component {
   //A bit of a misnomer, should be "GET RECENT ACTIVITY"
   //pass in a date object to get all records after that. Call everytime you want to add 7 days. (or however many days)
   getGroupAdminData = async (startDate, endDate, isRefresh) => {
+    console.log("isRefresh:",isRefresh);
     var start = fbTimestamp.fromDate(startDate);
     var end = fbTimestamp.fromDate(endDate);
     var users = [...this.state.groupMembers];
@@ -371,8 +376,10 @@ class Platform extends React.Component {
         });
         index++;
       });
+      console.log("New Activity: ",recentActivity);
 
       var newArr = [...this.state.recentActivity];
+      console.log("NewArr: ",newArr);
       //if (isRefresh) newArr = [];
       //to ensure no duplicates
       recentActivity.forEach((a) => {
@@ -382,6 +389,7 @@ class Platform extends React.Component {
       });
       //Sort DESCENDING time, so most recent first. REMEMBER: return an NUMBER (positive/negative) NOT a BOOLEAN!!!! This did not work if you return a comparison of times.
       newArr.sort((a, b) => b.time.getTime() - a.time.getTime());
+      console.log("Final Arr: ",newArr);
       this.setState({ recentActivity: newArr });
     });
   };

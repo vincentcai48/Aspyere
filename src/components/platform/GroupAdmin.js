@@ -362,6 +362,7 @@ class GroupAdmin extends React.Component {
   };
 
   render() {
+    console.log(this.props.recentActivity)
     return (
       <div id="groupAdmin-container">
         <section id="recent-activity">
