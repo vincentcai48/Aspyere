@@ -113,7 +113,6 @@ class Platform extends React.Component {
           //first time, get this data just once. Snapshot listener updates when platform settings change. You don't want to do all this everytime the platform admin settings update.
           if (isFirstTime) {
             isFirstTime = false;
-            console.log("First Time",isFirstTime)
             //Step 3: get the necessary userMapping usernames
             await this.context.getUsersMapping(doc.data().members);
 
@@ -442,7 +441,7 @@ class Platform extends React.Component {
       .collection("events")
       .where("endTime", ">=", nowTime)
       .orderBy("endTime", "asc");
-    if (!this.state.lastDocAllEvents) return;
+    if (!this.state.lastDocAllEvents&&!isRefresh) return;
     if (this.state.lastDocAllEvents === -1 || isRefresh) {
       allEvents = await query.limit(this.state.limit).get();
     } else {

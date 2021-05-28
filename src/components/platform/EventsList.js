@@ -156,6 +156,7 @@ class EventsList extends React.Component {
     var events = this.state.isPast
       ? this.props.pastEvents
       : this.props.allEvents;
+    console.log(events);
     var num = -1; //used to count array indices in the "map" method for all events, to match it with the proper countdown.
     if (this.state.redirect) return <Redirect to={this.state.redirect} />;
     return (
