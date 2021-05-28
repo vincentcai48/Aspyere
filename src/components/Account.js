@@ -96,7 +96,7 @@ function Account() {
       </button>
 
       <button
-        className="bb delete-account-button"
+        className="promote-admin delete-account-button"
         onClick={() => setDeletePopup(true)}
       >
         Delete This Account

@@ -41,6 +41,7 @@ class GroupAdmin extends React.Component {
         "inputDifficulty",
       ],
       changesToSave: false, //boolean whether changes need to be save or not.
+      joinCodeToSave: false,
       isLoading: false,
       isError: false,
       showSuccess: false,
@@ -187,6 +188,7 @@ class GroupAdmin extends React.Component {
     this.setState({ [name]: value });
     if (this.state.settingsList.includes(name))
       this.setState({ changesToSave: true });
+    if(name=="inputJoinCode") this.setState({joinCodeToSave: true});
   };
 
   changeStateCheckbox = (e) => {
@@ -537,9 +539,9 @@ class GroupAdmin extends React.Component {
               autoComplete="off"
               style={{ fontSize: "16px", fontWeight: "bolder" }}
             ></input>
-            <button className="sb" onClick={this.savePrivateSettings}>
+            {this.state.joinCodeToSave&&<button className="sb" onClick={this.savePrivateSettings}>
               Update Join Code
-            </button>
+            </button>}
           </div>
           <div className="danger-zone">
             <p>Danger Zone</p>
@@ -566,9 +568,8 @@ class GroupAdmin extends React.Component {
             <div className="popup nsp">
               Successfully updated!!
               <button
-                clasName="submit-button"
-                style={{ marginLeft: "10px" }}
-                onClick={() => this.setState({ showSuccess: false })}
+                className="sb"
+                onClick={() => this.setState({ showSuccess: false, joinCodeToSave: false })}
               >
                 Got it!
               </button>
