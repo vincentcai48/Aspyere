@@ -157,14 +157,15 @@ class LobbyPlatform extends React.Component {
     var createGroup = pFunctions.httpsCallable("createGroup");
     var difficulty = this.state.inputDifficulty;
     if (this.props.groupOptionsOn && this.state.selectedGroupOption) {
-      if (this.props.groupOption) {
+      if (this.props.groupOptions) {
         var thisOption = this.props.groupOptions.filter(
           (e) => e.description == this.state.selectedGroupOption
         );
-        if (thisOption.length > 0) difficulty = thisOption[0];
+
+        if (thisOption.length > 0) difficulty = thisOption[0].difficulty;
       }
     }
-    createGroup({
+    var obj ={
       platformId: this.props.platformId,
       tryGroupCreateCode: this.state.tryGroupCreateCode,
       groupSettings: {
@@ -175,7 +176,9 @@ class LobbyPlatform extends React.Component {
         admins: [pAuth.currentUser.uid],
         isPublic: this.state.inputIsPublic,
       },
-    })
+    };
+    console.log(obj);
+    createGroup(obj)
       .then((res) => {
         this.setState({
           isLoading: false,
