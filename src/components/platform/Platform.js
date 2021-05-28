@@ -62,7 +62,6 @@ class Platform extends React.Component {
   }
 
   async componentDidMount(isOverride, newPId, newGId) {
-    console.log("componentDidMount")
     //Step 1: get the url param id and set to a var in state.
     const queryString = window.location.search;
     this.setState({ currentRoute: queryString });
@@ -103,6 +102,7 @@ class Platform extends React.Component {
             });
           var isAdmin = doc.data().admins.includes(pAuth.currentUser.uid);
           var databases = doc.data().databases;
+          if(doc.data().requireGroup&&gId=="individual") this.setState({isLoadingPlatform: false, isGroupNotExist: true});
           this.setState({
             platformSettings: { ...doc.data(), id: doc.id },
             isAdmin: isAdmin,
@@ -175,7 +175,10 @@ class Platform extends React.Component {
 
   //Just gets the group data (and privateData if an admin)
   getGroupData = async (groupId) => {
-    if (this.state.groupId == "individual") return;
+    if (this.state.groupId == "individual"){
+      if(this.platformSettings&&this.platformSettings.requireGroup) this.setState({isGroupNotExist: true})
+      return;
+    }
     await pFirestore
       .collection("platforms")
       .doc(this.state.platformId)
@@ -594,6 +597,7 @@ class Platform extends React.Component {
   };
 
   render() {
+    console.log(this.state.isLoadingPlatform)
     if (this.state.redirect) {
       const thisRedirect = this.state.redirect;
       this.setState({ redirect: null });
