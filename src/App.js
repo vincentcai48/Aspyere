@@ -71,6 +71,7 @@ class App extends React.Component {
         console.log("REDIRECT");
         // if (window.location.pathname === "/" || window.location.pathname === "")
         await this.oneTimeRedirect(user.uid);
+        console.log("done")
 
         try {
           //get their list of platforms
@@ -86,6 +87,11 @@ class App extends React.Component {
                 });
 
                 this.getUsersPlatforms(doc.data().allPlatforms);
+              }else{
+                console.log("false");
+                this.state.setPlatform(null);
+                //if there's no platform, there can't be a group
+                this.setState({ isLoadingSite: false });
               }
             });
         } catch (e) {
@@ -142,6 +148,7 @@ class App extends React.Component {
       .get();
     if (!userDoc.exists){
       var defaultPlatform = await this.getDefaultPlatform();
+      console.log("NOT EXIST",defaultPlatform)
       if(defaultPlatform) this.setState({redirect: `/platform?id=${defaultPlatform}`,
       countRedirect: 1,})
       return;
