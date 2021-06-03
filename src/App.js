@@ -68,10 +68,8 @@ class App extends React.Component {
           userId: user.uid,
           isLoadingSite: true,
         });
-        console.log("REDIRECT");
         // if (window.location.pathname === "/" || window.location.pathname === "")
         await this.oneTimeRedirect(user.uid);
-        console.log("done")
 
         try {
           //get their list of platforms
@@ -88,14 +86,11 @@ class App extends React.Component {
 
                 this.getUsersPlatforms(doc.data().allPlatforms);
               }else{
-                console.log("false");
-                this.state.setPlatform(null);
                 //if there's no platform, there can't be a group
                 this.setState({ isLoadingSite: false });
               }
             });
         } catch (e) {
-          this.state.setPlatform(null);
           //if there's no platform, there can't be a group
           this.setState({ isLoadingSite: false });
         }
@@ -136,6 +131,7 @@ class App extends React.Component {
   }
 
   getDefaultPlatform = async () =>{
+    console.log("Getting Default Platform")
     var res  = await pFirestore.collection("settings").doc("settings").get();
     return res.data()["defaultPlatform"];
   }
@@ -148,7 +144,6 @@ class App extends React.Component {
       .get();
     if (!userDoc.exists){
       var defaultPlatform = await this.getDefaultPlatform();
-      console.log("NOT EXIST",defaultPlatform)
       if(defaultPlatform) this.setState({redirect: `/platform?id=${defaultPlatform}`,
       countRedirect: 1,})
       return;
@@ -242,6 +237,7 @@ class App extends React.Component {
 
   //Get the document data of all the user's platforms
   getUsersPlatforms = async (platformIds) => {
+    if(!platformIds) return;
     var arrNewPlatforms = []; //platforms not already in the list.
     platformIds.forEach(async (pId) => {
       var withSameId = [...this.state.allPlatforms].filter((p) => p.id == pId);
