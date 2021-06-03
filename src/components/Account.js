@@ -71,8 +71,8 @@ function Account() {
     setLoading(false);
   };
 
-  if (!isAuth) return <Auth />;
-  if (!pAuth.currentUser.uid) return;
+  if (!isAuth||!pAuth.currentUser||!pAuth.currentUser.uid) return <Auth />;
+
   return (
     <div id="account-container">
       <h2>Account</h2>

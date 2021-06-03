@@ -68,6 +68,7 @@ class App extends React.Component {
           userId: user.uid,
           isLoadingSite: true,
         });
+        console.log("REDIRECT");
         // if (window.location.pathname === "/" || window.location.pathname === "")
         await this.oneTimeRedirect(user.uid);
 
@@ -135,7 +136,10 @@ class App extends React.Component {
       .doc(pAuth.currentUser.uid)
       .get()
       .then((userDoc) => {
-        if (!userDoc.exists) return;
+        if (!userDoc.exists){
+          console.log("NO DOC")
+          return;
+        }
         if (
           !userDoc.data().allPlatforms ||
           userDoc.data().allPlatforms.length == 0
