@@ -60,19 +60,20 @@ function Account() {
   const deleteAccount = async () => {
     setLoading(true);
     setDeletePopup(false);
-    var user = { ...pAuth.currentUser };
+    var user = pAuth.currentUser;
 
     try {
-      await pAuth.currentUser.delete();
       await logout();
+      await user.delete();
+      
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
 
-  if (!isAuth) return <Auth />;
-  if (!pAuth.currentUser.uid) return;
+  if (!isAuth||!pAuth.currentUser||!pAuth.currentUser.uid) return <Auth />;
+
   return (
     <div id="account-container">
       <h2>Account</h2>

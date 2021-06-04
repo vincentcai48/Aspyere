@@ -103,7 +103,7 @@ class PlatformList extends React.Component {
                       <i className="far fa-eye"></i>
                     </div>
                     {/* <div className="platform-id">ID: {p.id}</div> */}
-                    {this.context.rootUserData.allPlatforms.includes(p.id) ? (
+                    {this.context.rootUserData.allPlatforms&&this.context.rootUserData.allPlatforms.includes(p.id) ? (
                       <button
                         className="join-button"
                         onClick={() =>

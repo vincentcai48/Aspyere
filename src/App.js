@@ -85,10 +85,12 @@ class App extends React.Component {
                 });
 
                 this.getUsersPlatforms(doc.data().allPlatforms);
+              }else{
+                //if there's no platform, there can't be a group
+                this.setState({ isLoadingSite: false });
               }
             });
         } catch (e) {
-          this.state.setPlatform(null);
           //if there's no platform, there can't be a group
           this.setState({ isLoadingSite: false });
         }
@@ -128,47 +130,54 @@ class App extends React.Component {
       });
   }
 
+  getDefaultPlatform = async () =>{
+    console.log("Getting Default Platform")
+    var res  = await pFirestore.collection("settings").doc("settings").get();
+    return res.data()["defaultPlatform"];
+  }
+
   //on login only, default to the first platform at index 0
   oneTimeRedirect = async (userId) => {
-    await pFirestore
+    var userDoc = await pFirestore
       .collection("users")
       .doc(pAuth.currentUser.uid)
-      .get()
-      .then((userDoc) => {
-        if (!userDoc.exists) return;
-        if (
-          !userDoc.data().allPlatforms ||
-          userDoc.data().allPlatforms.length == 0
-        )
-          return;
-        var pId = userDoc.data().allPlatforms[0];
+      .get();
+    if (!userDoc.exists){
+      var defaultPlatform = await this.getDefaultPlatform();
+      if(defaultPlatform) this.setState({redirect: `/platform?id=${defaultPlatform}`,
+      countRedirect: 1,})
+      return;
+    }
+    if (
+      !userDoc.data().allPlatforms ||
+      userDoc.data().allPlatforms.length == 0
+    )
+      return;
+    var pId = userDoc.data().allPlatforms[0];
 
-        pFirestore
-          .collection("platforms")
-          .doc(pId)
-          .collection("users")
-          .doc(userId)
-          .get()
-          .then((platformUserDoc) => {
-            if (!platformUserDoc.exists) {
-              this.setState({
-                redirect: `/platform?id=${pId}`,
-                countRedirect: 1,
-              });
-            } else {
-              var gId =
-                !platformUserDoc.data().joinedGroups ||
-                platformUserDoc.data().joinedGroups.length === 0
-                  ? null
-                  : platformUserDoc.data().joinedGroups[0];
-
-              this.setState({
-                redirect: `/platform?id=${pId}&group=${gId || ""}`,
-                countRedirect: 1,
-              });
-            }
-          });
+    var platformUserDoc = await pFirestore
+      .collection("platforms")
+      .doc(pId)
+      .collection("users")
+      .doc(userId)
+      .get(); 
+    if (!platformUserDoc.exists) {
+      this.setState({
+        redirect: `/platform?id=${pId}`,
+        countRedirect: 1,
       });
+    } else {
+      var gId =
+        !platformUserDoc.data().joinedGroups ||
+        platformUserDoc.data().joinedGroups.length === 0
+          ? null
+          : platformUserDoc.data().joinedGroups[0];
+
+      this.setState({
+        redirect: `/platform?id=${pId}&group=${gId || ""}`,
+        countRedirect: 1,
+      });
+    }
   };
 
   // joinPlatform = async (platformId) => {
@@ -228,6 +237,7 @@ class App extends React.Component {
 
   //Get the document data of all the user's platforms
   getUsersPlatforms = async (platformIds) => {
+    if(!platformIds) return;
     var arrNewPlatforms = []; //platforms not already in the list.
     platformIds.forEach(async (pId) => {
       var withSameId = [...this.state.allPlatforms].filter((p) => p.id == pId);
